@@ -276,6 +276,44 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
         return {"title": original_title, "summary": text, "content": f"<p>{text}</p>"}
 
 
+SITE_URL = "https://newscommu.com"
+
+def update_sitemap(all_articles: list) -> None:
+    """all_articles 기반으로 sitemap.xml 생성"""
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>']
+    lines.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+
+    # 메인 페이지
+    lines.append(f"""  <url>
+    <loc>{SITE_URL}/</loc>
+    <changefreq>hourly</changefreq>
+    <priority>1.0</priority>
+    <lastmod>{now}</lastmod>
+  </url>""")
+
+    # 기사 상세 페이지
+    seen = set()
+    for a in all_articles:
+        aid = a.get("article_id", "")
+        if not aid or aid in seen:
+            continue
+        seen.add(aid)
+        pub = (a.get("pub_date") or a.get("pubDate") or "")[:10] or now
+        lines.append(f"""  <url>
+    <loc>{SITE_URL}/article.php?id={aid}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>{pub}</lastmod>
+  </url>""")
+
+    lines.append("</urlset>")
+    sitemap_path = os.path.join(os.path.dirname(DATA_DIR) if DATA_DIR != "data" else ".", "sitemap.xml")
+    with open(sitemap_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    print(f"[sitemap] {len(seen)}개 기사 URL 업데이트")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -381,6 +419,9 @@ def main():
 
     # 7. 발행 이력 저장
     save_published(published)
+
+    # 8. sitemap.xml 갱신
+    update_sitemap(all_articles)
 
     print(f"\n[완료] '{category}' → {new_article['title'][:50]}")
 
