@@ -106,6 +106,13 @@ $cat_meta = $CATEGORY_META[$cat_key] ?? ['color' => '#1a73e8', 'bg' => '#e8f0fe'
 // Normalise fields
 $title       = htmlspecialchars($article['title'] ?? '', ENT_QUOTES, 'UTF-8');
 $summary     = htmlspecialchars($article['summary'] ?? '', ENT_QUOTES, 'UTF-8');
+// content: HTML with h2/h3/p tags. Fall back to summary if not present.
+$raw_content = $article['content'] ?? '';
+if ($raw_content) {
+    $content_html = strip_tags($raw_content, '<h2><h3><p><br><strong><em>');
+} else {
+    $content_html = '<p>' . nl2br($summary) . '</p>';
+}
 $orig_url    = $article['original_url'] ?? $article['url'] ?? '#';
 $source      = htmlspecialchars($article['source'] ?? '', ENT_QUOTES, 'UTF-8');
 $pub_date_raw = $article['pubDate'] ?? $article['pub_date'] ?? '';
@@ -152,7 +159,7 @@ $og_url = SITE_URL . '/article.php?id=' . urlencode($article_id);
 
 <header>
   <div class="header-inner">
-    <a class="logo" href="/">📰 <?= htmlspecialchars(SITE_NAME) ?></a>
+    <a class="logo" href="/"><img src="/assets/images/favicon.png" alt="로고" style="width:28px;height:28px;vertical-align:middle;margin-right:6px;border-radius:6px;"> <?= htmlspecialchars(SITE_NAME) ?></a>
     <a href="/" style="margin-left:auto; font-size:13px; color:var(--text-muted);">← 전체 뉴스</a>
   </div>
 </header>
@@ -182,7 +189,7 @@ $og_url = SITE_URL . '/article.php?id=' . urlencode($article_id);
               <span><?= htmlspecialchars($pub_date) ?></span>
             <?php endif; ?>
           </div>
-          <h2><?= $title ?></h2>
+          <h1><?= $title ?></h1>
           <?php if ($orig_url && $orig_url !== '#'): ?>
             <a class="original-link"
                href="<?= htmlspecialchars($orig_url, ENT_QUOTES, 'UTF-8') ?>"
@@ -192,8 +199,8 @@ $og_url = SITE_URL . '/article.php?id=' . urlencode($article_id);
           <?php endif; ?>
         </div>
 
-        <div class="article-summary">
-          <?= nl2br($summary) ?>
+        <div class="article-body">
+          <?= $content_html ?>
         </div>
 
         <!-- Share buttons -->

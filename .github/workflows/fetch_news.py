@@ -37,22 +37,25 @@ MAX_PUBLISHED = 500
 _CAT_LIST = "정치, 경제, 사회, 생활/문화, 세계, IT/과학, 부동산, 헬스/건강, 스포츠, 연예, 자동차, 날씨, 가상화폐, 주식, 육아, 여행, 게임, 패션/뷰티, 음식/맛집, 교육, 환경, 법률, 취업/직장, 반려동물, 영화"
 
 REWRITE_PROMPT = (
-    "다음 뉴스 기사를 친근한 커뮤니티 게시글처럼 재작성해주세요.\n\n"
+    "다음 뉴스 기사를 커뮤니티 에디터의 시각으로 재작성해주세요.\n\n"
     "반드시 아래 형식 그대로 출력하세요 (마크다운 ** 기호 절대 사용 금지):\n\n"
-    "제목: (핵심을 담은 자연스러운 한국어 제목. 단어 중간에 자르지 말 것. 30자 이내)\n"
+    "제목: (핵심을 담은 자연스러운 한국어 제목. 30자 이내. 단어 중간에 자르지 말 것)\n"
     f"카테고리: (아래 목록 중 기사 내용에 가장 맞는 것 1개만 정확히 그대로 쓸 것)\n"
     f"  [{_CAT_LIST}]\n"
-    "내용: 아래 구조로 작성\n"
-    "  1. 기사 핵심 내용을 2~3문장으로 친근하게 요약 (마치 친구한테 얘기하듯이, 사실은 정확히 유지)\n"
-    "  2. 줄바꿈 후 이 사안에서 흥미롭거나 논란이 될 만한 포인트 1~2문장 (가볍고 재미있게)\n"
-    "  3. 줄바꿈 후 독자에게 의견을 묻는 질문 1개 (편하고 자연스럽게)\n"
-    "  전체 300자 내외\n\n"
+    "요약: (기사 핵심을 2문장으로 요약. 구어체. 카드 미리보기용)\n"
+    "내용:\n"
+    "<h2>첫 번째 소제목 (기사의 핵심 사실)</h2>\n"
+    "<p>핵심 내용을 친근한 구어체로 2~3문장. 사실을 정확히 전달하되 친구한테 얘기하듯이.</p>\n"
+    "<h2>두 번째 소제목 (에디터 시각 또는 논란 포인트)</h2>\n"
+    "<p>이 사안에서 흥미롭거나 의외인 점, 에디터 개인 생각 1~2문장 포함. 예: '솔직히 말하면...', '개인적으로는...' 식으로.</p>\n"
+    "<h3>여러분 생각은?</h3>\n"
+    "<p>독자에게 의견을 묻는 질문 1개. 편하고 자연스럽게.</p>\n\n"
     "주의사항:\n"
     "- ** 같은 마크다운 기호 절대 사용하지 말 것\n"
-    "- 딱딱한 뉴스 문체(~했습니다, ~입니다) 대신 부드러운 구어체(~했대요, ~라고 하네요, ~이래요) 사용\n"
-    "- 제목은 완전한 문장이나 구로 끝낼 것\n"
-    "- 단어를 중간에 자르거나 생략하지 말 것\n"
-    "- '제목:', '카테고리:', '내용:' 앞에 ** 붙이지 말 것. 정확히 해당 단어로만 시작할 것"
+    "- 딱딱한 뉴스 문체(~했습니다, ~입니다) 대신 구어체(~했대요, ~라고 하네요, ~인 것 같아요) 사용\n"
+    "- h2/h3/p 태그 외 다른 HTML 태그 사용 금지\n"
+    "- 내용 전체 600자 내외\n"
+    "- '제목:', '카테고리:', '요약:', '내용:' 앞에 ** 붙이지 말 것"
 )
 
 # 중복 판단: 핵심 명사가 이 비율 이상 겹치면 중복
@@ -203,9 +206,9 @@ def fetch_naver_news(query: str, display: int = 20) -> list:
 
 
 def rewrite_with_claude(text: str, original_title: str) -> dict:
-    """제목과 내용을 함께 재작성. {'title': ..., 'summary': ...} 반환"""
+    """제목·요약·HTML본문을 재작성. {'title': ..., 'summary': ..., 'content': ...} 반환"""
     if not ANTHROPIC_API_KEY:
-        return {"title": original_title, "summary": text}
+        return {"title": original_title, "summary": text, "content": f"<p>{text}</p>"}
     headers = {
         "x-api-key": ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
@@ -213,51 +216,102 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
     }
     payload = {
         "model": ANTHROPIC_MODEL,
-        "max_tokens": 600,
+        "max_tokens": 1200,
         "messages": [{"role": "user", "content": f"{REWRITE_PROMPT}\n\n{text}"}],
     }
     try:
         resp = requests.post(ANTHROPIC_API_URL, headers=headers, json=payload, timeout=30)
         resp.raise_for_status()
         result = resp.json()["content"][0]["text"].strip()
-        print(f"[Claude 응답]\n{result[:200]}")
+        print(f"[Claude 응답]\n{result[:300]}")
 
         # ** 마크다운 제거
         result = result.replace("**", "").replace("*", "")
 
-        # 제목: / 카테고리: / 내용: 파싱
         new_title = None
         new_category = None
-        summary_lines = []
-        in_content = False
+        summary_text = None
+        content_lines = []
+        section = None  # 'summary' | 'content'
+
         for line in result.split("\n"):
             stripped = line.strip()
             if re.match(r"^제\s*목\s*[:：]", stripped):
                 new_title = re.sub(r"^제\s*목\s*[:：]\s*", "", stripped).strip()
+                section = None
             elif re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
                 new_category = re.sub(r"^카\s*테\s*고\s*리\s*[:：]\s*", "", stripped).strip()
+                section = None
+            elif re.match(r"^요\s*약\s*[:：]", stripped):
+                summary_text = re.sub(r"^요\s*약\s*[:：]\s*", "", stripped).strip()
+                section = 'summary'
             elif re.match(r"^내\s*용\s*[:：]", stripped):
-                content_part = re.sub(r"^내\s*용\s*[:：]\s*", "", stripped).strip()
-                if content_part:
-                    summary_lines.append(content_part)
-                in_content = True
-            elif in_content and stripped:
-                summary_lines.append(stripped)
+                section = 'content'
+            else:
+                if section == 'summary' and stripped and not summary_text:
+                    summary_text = stripped
+                elif section == 'content':
+                    content_lines.append(line)
 
         if not new_title:
-            print(f"[Claude] 제목 파싱 실패, 원본 제목 사용")
+            print("[Claude] 제목 파싱 실패, 원본 사용")
             new_title = original_title
-        if not summary_lines:
-            print(f"[Claude] 내용 파싱 실패, 전체 응답 사용")
-            summary_lines = [result]
-        if new_category:
-            print(f"[Claude] 카테고리 분류: {new_category}")
 
-        summary = "\n".join(summary_lines)
-        return {"title": new_title, "summary": summary, "category": new_category}
+        # HTML 본문 조합 (허용 태그만 유지)
+        allowed = re.compile(r'<(?!/?(h2|h3|p|br)(\s|>))[^>]+>', re.IGNORECASE)
+        raw_content = "\n".join(content_lines).strip()
+        content_html = allowed.sub("", raw_content) if raw_content else f"<p>{summary_text or text}</p>"
+
+        # 요약이 없으면 본문에서 첫 p 태그 내용 추출
+        if not summary_text:
+            m = re.search(r"<p>(.*?)</p>", content_html, re.DOTALL)
+            summary_text = m.group(1).strip() if m else text
+
+        if new_category:
+            print(f"[Claude] 카테고리: {new_category}")
+
+        return {"title": new_title, "summary": summary_text, "content": content_html, "category": new_category}
     except Exception as exc:
         print(f"[Claude] 오류: {exc}")
-        return {"title": original_title, "summary": text}
+        return {"title": original_title, "summary": text, "content": f"<p>{text}</p>"}
+
+
+SITE_URL = "https://newscommu.com"
+
+def update_sitemap(all_articles: list) -> None:
+    """all_articles 기반으로 sitemap.xml 생성"""
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>']
+    lines.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+
+    # 메인 페이지
+    lines.append(f"""  <url>
+    <loc>{SITE_URL}/</loc>
+    <changefreq>hourly</changefreq>
+    <priority>1.0</priority>
+    <lastmod>{now}</lastmod>
+  </url>""")
+
+    # 기사 상세 페이지
+    seen = set()
+    for a in all_articles:
+        aid = a.get("article_id", "")
+        if not aid or aid in seen:
+            continue
+        seen.add(aid)
+        pub = (a.get("pub_date") or a.get("pubDate") or "")[:10] or now
+        lines.append(f"""  <url>
+    <loc>{SITE_URL}/article.php?id={aid}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>{pub}</lastmod>
+  </url>""")
+
+    lines.append("</urlset>")
+    sitemap_path = os.path.join(os.path.dirname(DATA_DIR) if DATA_DIR != "data" else ".", "sitemap.xml")
+    with open(sitemap_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    print(f"[sitemap] {len(seen)}개 기사 URL 업데이트")
 
 
 # ---------------------------------------------------------------------------
@@ -327,6 +381,7 @@ def main():
             "title": rewritten["title"],
             "original_title": title,
             "summary": rewritten["summary"],
+            "content": rewritten.get("content", ""),
             "original_url": original_url,
             "url": original_url,
             "source": source,
@@ -364,6 +419,9 @@ def main():
 
     # 7. 발행 이력 저장
     save_published(published)
+
+    # 8. sitemap.xml 갱신
+    update_sitemap(all_articles)
 
     print(f"\n[완료] '{category}' → {new_article['title'][:50]}")
 
