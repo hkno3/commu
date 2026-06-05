@@ -60,12 +60,18 @@ header {
   flex-wrap: wrap;
   gap: 4px;
   overflow: hidden;
-  max-height: 80px;
+  max-height: 36px;
   transition: max-height 0.3s ease;
 }
 
 .cat-nav-inner.expanded {
-  max-height: 200px;
+  max-height: 300px;
+}
+
+.cat-more-row {
+  display: flex;
+  justify-content: center;
+  padding: 2px 0 4px;
 }
 
 .cat-btn {

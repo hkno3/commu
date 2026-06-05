@@ -57,7 +57,15 @@ function buildCategoryNav() {
     nav.appendChild(btn);
   });
 
-  // 더보기 버튼
+  // 더보기 버튼 - nav 바깥 별도 행에 배치
+  let moreRow = document.getElementById('cat-more-row');
+  if (!moreRow) {
+    moreRow = document.createElement('div');
+    moreRow.id = 'cat-more-row';
+    moreRow.className = 'cat-more-row';
+    nav.parentElement.appendChild(moreRow);
+  }
+  moreRow.innerHTML = '';
   const moreBtn = document.createElement('button');
   moreBtn.className = 'cat-more-btn';
   moreBtn.textContent = '더보기 ▼';
@@ -66,7 +74,7 @@ function buildCategoryNav() {
     nav.classList.toggle('expanded', catExpanded);
     moreBtn.textContent = catExpanded ? '접기 ▲' : '더보기 ▼';
   };
-  nav.appendChild(moreBtn);
+  moreRow.appendChild(moreBtn);
 }
 
 function switchCategory(cat, btnEl) {
