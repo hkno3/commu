@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
 
     if ($edit_id && $old_cat && $new_cat) {
         // 기존 카테고리에서 기사 찾기
-        $old_path = DATA_DIR . '/' . str_replace('/', '_', $old_cat) . '.json';
+        $old_path = DATA_DIR . '/' . cat_to_filename($old_cat) . '.json';
         $article_data = null;
         if (file_exists($old_path)) {
             $old_articles = json_decode(file_get_contents($old_path), true) ?: [];
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
         }
         // 새 카테고리 파일에 추가 (카테고리 변경 시)
         if ($article_data && $old_cat !== $new_cat) {
-            $new_path = DATA_DIR . '/' . str_replace('/', '_', $new_cat) . '.json';
+            $new_path = DATA_DIR . '/' . cat_to_filename($new_cat) . '.json';
             $new_articles = file_exists($new_path) ? (json_decode(file_get_contents($new_path), true) ?: []) : [];
             array_unshift($new_articles, $article_data);
             file_put_contents($new_path, json_encode($new_articles, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
@@ -98,7 +98,7 @@ if (isset($_GET['delete']) && ($_SESSION['admin_auth'] ?? false)) {
     $del_cat = preg_replace('/[^a-zA-Z_\/가-힣]/', '', $_GET['cat'] ?? '');
     $del_error = '';
     if ($del_id && $del_cat) {
-        $path = DATA_DIR . '/' . str_replace('/', '_', $del_cat) . '.json';
+        $path = DATA_DIR . '/' . cat_to_filename($del_cat) . '.json';
         if (!file_exists($path)) {
             $del_error = "파일 없음: $path";
         } else {
@@ -137,7 +137,7 @@ if ($is_auth) {
         // latest.json 없으면 카테고리 파일 병합
         if (empty($articles)) {
             foreach ($all_cats as $cat) {
-                $path = DATA_DIR . '/' . str_replace('/', '_', $cat) . '.json';
+                $path = DATA_DIR . '/' . cat_to_filename($cat) . '.json';
                 if (file_exists($path)) {
                     $items = json_decode(file_get_contents($path), true) ?: [];
                     $articles = array_merge($articles, $items);
@@ -146,7 +146,7 @@ if ($is_auth) {
             usort($articles, fn($a, $b) => strcmp($b['pub_date'] ?? $b['pubDate'] ?? '', $a['pub_date'] ?? $a['pubDate'] ?? ''));
         }
     } else {
-        $path = DATA_DIR . '/' . str_replace('/', '_', $cur_cat) . '.json';
+        $path = DATA_DIR . '/' . cat_to_filename($cur_cat) . '.json';
         if (file_exists($path)) {
             $articles = json_decode(file_get_contents($path), true) ?: [];
         }
