@@ -1,4 +1,5 @@
-data/*.json
+# data 폴더는 FTP로만 관리 (git 추적 안 함)
+data/
 .env
 *.log
 __pycache__/
