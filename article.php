@@ -74,7 +74,7 @@ if (!$article) {
 if (!$article) {
     header('HTTP/1.0 404 Not Found');
     ?><!DOCTYPE html>
-    <html lang="ko"><head><meta charset="UTF-8"><title>기사를 찾을 수 없습니다 - <?= htmlspecialchars(SITE_NAME) ?></title></head>
+    <html lang="ko"><head><meta charset="UTF-8"><title>기사를 찾을 수 없습니다 - <?= htmlspecialchars(SITE_NAME) ?></title><link rel="icon" type="image/png" href="/assets/images/favicon.png"></head>
     <body style="font-family:sans-serif; text-align:center; padding:80px 20px;">
     <h1>404</h1><p>기사를 찾을 수 없습니다.</p><a href="/">홈으로 돌아가기</a>
     </body></html>
@@ -139,6 +139,8 @@ $og_url = SITE_URL . '/article.php?id=' . urlencode($article_id);
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/assets/images/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/images/favicon.png">
   <link rel="stylesheet" href="/assets/css/style.css">
 
   <!-- AdSense -->
