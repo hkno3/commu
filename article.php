@@ -152,7 +152,7 @@ $og_url = SITE_URL . '/article.php?id=' . urlencode($article_id);
 
 <header>
   <div class="header-inner">
-    <a class="logo" href="/">📰 <?= htmlspecialchars(SITE_NAME) ?></a>
+    <a class="logo" href="/"><img src="/assets/images/favicon.png" alt="로고" style="width:28px;height:28px;vertical-align:middle;margin-right:6px;border-radius:6px;"> <?= htmlspecialchars(SITE_NAME) ?></a>
     <a href="/" style="margin-left:auto; font-size:13px; color:var(--text-muted);">← 전체 뉴스</a>
   </div>
 </header>
