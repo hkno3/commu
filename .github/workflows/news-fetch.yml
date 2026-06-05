@@ -33,7 +33,7 @@ jobs:
       - name: Deploy to FastComet via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: 172.105.235.119
+          server: ftp.bizachieve.com
           username: bizachie
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: /home6/bizachie/newscommu.com/
