@@ -2,7 +2,7 @@
 require_once __DIR__ . '/config.php';
 
 // ── RSS 피드 가져오기 (1시간 캐싱) ──
-function fetch_rss(string $url, string $cache_key, int $ttl = 3600): array {
+function fetch_rss(string $url, string $cache_key, int $ttl = 43200): array {
     $cache_file = sys_get_temp_dir() . '/nc_rss_' . $cache_key . '.json';
     if (file_exists($cache_file) && (time() - filemtime($cache_file)) < $ttl) {
         return json_decode(file_get_contents($cache_file), true) ?: [];
