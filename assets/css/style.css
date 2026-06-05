@@ -382,3 +382,31 @@ header {
     padding: 12px;
   }
 }
+
+/* ── Footer ── */
+.site-footer {
+  background: #2c2c2c;
+  color: #aaa;
+  padding: 30px 20px;
+  margin-top: 40px;
+  font-size: 13px;
+}
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
+  margin-bottom: 12px;
+}
+.footer-links a {
+  color: #ccc;
+  text-decoration: none;
+}
+.footer-links a:hover { color: #fff; }
+.footer-info { margin-bottom: 8px; }
+.footer-copy { color: #777; }

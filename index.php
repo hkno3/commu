@@ -66,5 +66,19 @@ require_once __DIR__ . '/config.php';
 </div>
 
 <script src="/assets/js/main.js"></script>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-links">
+      <a href="/pages/about.php">매체소개</a>
+      <a href="/pages/privacy.php">개인정보처리방침</a>
+      <a href="/pages/terms.php">이용약관</a>
+      <a href="/pages/youth.php">청소년보호정책</a>
+      <a href="/pages/noemail.php">이메일무단수집거부</a>
+    </div>
+    <div class="footer-info">운영자 : 표경덕 &nbsp;|&nbsp; 문의 : across1211@naver.com</div>
+    <div class="footer-copy">Copyright © 2026 newscommu.com. All rights reserved.</div>
+  </div>
+</footer>
 </body>
 </html>
