@@ -151,7 +151,7 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
     <input type="text" name="otp" placeholder="인증 코드 6자리" maxlength="6" autofocus inputmode="numeric">
     <button type="submit">확인</button>
   </form>
-  <a class="back-link" href="/admin_rudwnQkd1/">← 처음으로</a>
+  <a class="back-link" href="?logout=1">← 처음으로</a>
 </div>
 
 <?php else: ?>
