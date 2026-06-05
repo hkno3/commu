@@ -6,7 +6,8 @@
   <title>개인정보처리방침 - newscommu.com</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="icon" type="image/png" href="/assets/images/favicon.png">
+<link rel="stylesheet" href="/assets/css/style.css">
   <style>
     .page-wrap { max-width: 860px; margin: 0 auto; padding: 40px 20px 60px; }
     .page-title { font-size: 26px; font-weight: 700; margin-bottom: 8px; color: var(--text); border-bottom: 2px solid var(--primary); padding-bottom: 14px; }
@@ -23,7 +24,7 @@
 
 <header>
   <div class="header-inner">
-    <a class="logo" href="/">📰 newscommu.com</a>
+    <a class="logo" href="/"><img src="/assets/images/favicon.png" alt="로고" style="width:28px;height:28px;vertical-align:middle;margin-right:6px;border-radius:6px;"> newscommu.com</a>
   </div>
 </header>
 

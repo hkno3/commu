@@ -7,6 +7,7 @@
 <title><?= $title ?> - newscommu.com</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/assets/images/favicon.png">
 <link rel="stylesheet" href="/assets/css/style.css">
 <style>
 .page-wrap { max-width: 860px; margin: 40px auto; padding: 0 20px 60px; }
@@ -19,7 +20,7 @@
 <body>
 <header>
   <div class="header-inner">
-    <a class="logo" href="/">📰 newscommu.com</a>
+    <a class="logo" href="/"><img src="/assets/images/favicon.png" alt="로고" style="width:28px;height:28px;vertical-align:middle;margin-right:6px;border-radius:6px;"> newscommu.com</a>
   </div>
 </header>
 <div class="page-wrap">
