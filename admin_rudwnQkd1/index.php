@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
 
     if ($edit_id && $old_cat && $new_cat) {
         // 기존 카테고리에서 기사 찾기
-        $old_path = DATA_DIR . '/' . $old_cat . '.json';
+        $old_path = DATA_DIR . '/' . str_replace('/', '_', $old_cat) . '.json';
         $article_data = null;
         if (file_exists($old_path)) {
             $old_articles = json_decode(file_get_contents($old_path), true) ?: [];
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
         }
         // 새 카테고리 파일에 추가 (카테고리 변경 시)
         if ($article_data && $old_cat !== $new_cat) {
-            $new_path = DATA_DIR . '/' . $new_cat . '.json';
+            $new_path = DATA_DIR . '/' . str_replace('/', '_', $new_cat) . '.json';
             $new_articles = file_exists($new_path) ? (json_decode(file_get_contents($new_path), true) ?: []) : [];
             array_unshift($new_articles, $article_data);
             file_put_contents($new_path, json_encode($new_articles, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
@@ -97,7 +97,7 @@ if (isset($_GET['delete']) && ($_SESSION['admin_auth'] ?? false)) {
     $del_id  = preg_replace('/[^a-f0-9]/i', '', $_GET['delete']);
     $del_cat = preg_replace('/[^a-zA-Z_\/가-힣]/', '', $_GET['cat'] ?? '');
     if ($del_id && $del_cat) {
-        $path = DATA_DIR . '/' . $del_cat . '.json';
+        $path = DATA_DIR . '/' . str_replace('/', '_', $del_cat) . '.json';
         if (file_exists($path)) {
             $articles = json_decode(file_get_contents($path), true) ?: [];
             $articles = array_values(array_filter($articles, fn($a) => ($a['article_id'] ?? '') !== $del_id));

@@ -1,0 +1,5 @@
+Options -Indexes
+RewriteEngine On
+
+# article slug URL: /article/slug → article.php?slug=slug
+RewriteRule ^article/([a-z0-9-]+)/?$ /article.php?slug=$1 [L,QSA]
