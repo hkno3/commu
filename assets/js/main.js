@@ -179,7 +179,12 @@ function createArticleCard(article) {
       <span class="comment-count">💬 <span id="cnt-${article.article_id}">${article.comment_count || 0}</span></span>
     </div>
   `;
-  card.onclick = () => { window.location.href = `/article.php?id=${encodeURIComponent(article.article_id)}`; };
+  card.onclick = () => {
+    const url = article.slug
+      ? `/article/${encodeURIComponent(article.slug)}`
+      : `/article.php?id=${encodeURIComponent(article.article_id)}`;
+    window.location.href = url;
+  };
   return card;
 }
 

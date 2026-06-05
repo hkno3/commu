@@ -42,6 +42,7 @@ REWRITE_PROMPT = (
     "제목: (핵심을 담은 자연스러운 한국어 제목. 30자 이내. 단어 중간에 자르지 말 것)\n"
     f"카테고리: (아래 목록 중 기사 내용에 가장 맞는 것 1개만 정확히 그대로 쓸 것)\n"
     f"  [{_CAT_LIST}]\n"
+    "슬러그: (기사 제목을 영어로 번역해 URL용 슬러그로. 소문자, 하이픈으로 연결, 3~6단어. 예: smilegate-crossfire-global-launch)\n"
     "요약: (기사 핵심을 2문장으로 요약. 구어체. 카드 미리보기용)\n"
     "내용:\n"
     "<h2>첫 번째 소제목 (기사의 핵심 사실)</h2>\n"
@@ -55,7 +56,7 @@ REWRITE_PROMPT = (
     "- 딱딱한 뉴스 문체(~했습니다, ~입니다) 대신 구어체(~했대요, ~라고 하네요, ~인 것 같아요) 사용\n"
     "- h2/h3/p 태그 외 다른 HTML 태그 사용 금지\n"
     "- 내용 전체 600자 내외\n"
-    "- '제목:', '카테고리:', '요약:', '내용:' 앞에 ** 붙이지 말 것"
+    "- '제목:', '카테고리:', '슬러그:', '요약:', '내용:' 앞에 ** 붙이지 말 것"
 )
 
 # 중복 판단: 핵심 명사가 이 비율 이상 겹치면 중복
@@ -230,6 +231,7 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
 
         new_title = None
         new_category = None
+        new_slug = None
         summary_text = None
         content_lines = []
         section = None  # 'summary' | 'content'
@@ -241,6 +243,11 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
                 section = None
             elif re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
                 new_category = re.sub(r"^카\s*테\s*고\s*리\s*[:：]\s*", "", stripped).strip()
+                section = None
+            elif re.match(r"^슬\s*러\s*그\s*[:：]", stripped):
+                raw_slug = re.sub(r"^슬\s*러\s*그\s*[:：]\s*", "", stripped).strip()
+                # 소문자, 영문/숫자/하이픈만 허용
+                new_slug = re.sub(r"[^a-z0-9-]", "", raw_slug.lower().replace(" ", "-"))
                 section = None
             elif re.match(r"^요\s*약\s*[:：]", stripped):
                 summary_text = re.sub(r"^요\s*약\s*[:：]\s*", "", stripped).strip()
@@ -270,10 +277,10 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
         if new_category:
             print(f"[Claude] 카테고리: {new_category}")
 
-        return {"title": new_title, "summary": summary_text, "content": content_html, "category": new_category}
+        return {"title": new_title, "slug": new_slug, "summary": summary_text, "content": content_html, "category": new_category}
     except Exception as exc:
         print(f"[Claude] 오류: {exc}")
-        return {"title": original_title, "summary": text, "content": f"<p>{text}</p>"}
+        return {"title": original_title, "slug": None, "summary": text, "content": f"<p>{text}</p>"}
 
 
 SITE_URL = "https://newscommu.com"
@@ -379,6 +386,7 @@ def main():
         new_article = {
             "article_id": article_id,
             "title": rewritten["title"],
+            "slug": rewritten.get("slug") or article_id,
             "original_title": title,
             "summary": rewritten["summary"],
             "content": rewritten.get("content", ""),

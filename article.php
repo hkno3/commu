@@ -1,29 +1,32 @@
 <?php
-/**
- * newscommu.com - Article detail page
- * URL: /article.php?id={article_id}
- * Updated: favicon fix
- */
 require_once __DIR__ . '/config.php';
 
-$article_id = trim($_GET['id'] ?? '');
-if ($article_id === '' || strlen($article_id) > 64) {
+// slug 또는 id로 조회
+$lookup_slug = preg_replace('/[^a-z0-9-]/', '', strtolower(trim($_GET['slug'] ?? '')));
+$article_id  = preg_replace('/[^a-f0-9]/i', '', trim($_GET['id'] ?? ''));
+
+if ($lookup_slug === '' && $article_id === '') {
     header('Location: /');
     exit;
 }
-$article_id = preg_replace('/[^a-f0-9]/i', '', $article_id); // md5 hex chars only
 
 // -----------------------------------------------------------------
 // Try to load article from JSON data files
 // -----------------------------------------------------------------
 $article = null;
 
+function match_article(array $a, string $slug, string $id): bool {
+    if ($slug !== '' && ($a['slug'] ?? '') === $slug) return true;
+    if ($id   !== '' && ($a['article_id'] ?? '') === $id)   return true;
+    return false;
+}
+
 // Check latest.json first (fastest)
 $latest_path = DATA_DIR . '/latest.json';
 if (file_exists($latest_path)) {
     $all = json_decode(file_get_contents($latest_path), true) ?: [];
     foreach ($all as $a) {
-        if (($a['article_id'] ?? '') === $article_id) {
+        if (match_article($a, $lookup_slug, $article_id)) {
             $article = $a;
             break;
         }
@@ -37,13 +40,16 @@ if (!$article) {
         if (basename($file) === 'latest.json') continue;
         $items = json_decode(file_get_contents($file), true) ?: [];
         foreach ($items as $a) {
-            if (($a['article_id'] ?? '') === $article_id) {
+            if (match_article($a, $lookup_slug, $article_id)) {
                 $article = $a;
                 break 2;
             }
         }
     }
 }
+
+// article_id 보정 (slug로 찾은 경우)
+if ($article) $article_id = $article['article_id'] ?? $article_id;
 
 // If still not found, try article_cache table
 if (!$article) {
@@ -124,7 +130,10 @@ try {
     $pub_date = $pub_date_raw;
 }
 
-$og_url = SITE_URL . '/article.php?id=' . urlencode($article_id);
+$article_slug = $article['slug'] ?? '';
+$og_url = $article_slug
+    ? SITE_URL . '/article/' . $article_slug
+    : SITE_URL . '/article.php?id=' . urlencode($article_id);
 ?>
 <!DOCTYPE html>
 <html lang="ko">
@@ -140,6 +149,7 @@ $og_url = SITE_URL . '/article.php?id=' . urlencode($article_id);
   <meta property="og:url"         content="<?= htmlspecialchars($og_url) ?>">
   <meta property="og:type"        content="article">
   <meta property="og:site_name"   content="<?= htmlspecialchars(SITE_NAME) ?>">
+  <link rel="canonical" href="<?= htmlspecialchars($og_url) ?>">
 
   <!-- Twitter Card -->
   <meta name="twitter:card"  content="summary">
