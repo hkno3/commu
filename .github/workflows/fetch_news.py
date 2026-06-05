@@ -35,8 +35,10 @@ PUBLISHED_FILE = os.path.join(DATA_DIR, "published.json")
 MAX_PUBLISHED = 500
 
 REWRITE_PROMPT = (
-    "다음 뉴스 기사를 200자 내외로 핵심만 간결하게 요약해주세요. "
-    "원문과 다른 표현을 사용하되 사실은 정확하게 유지하세요:"
+    "다음 뉴스 기사를 아래 형식으로 작성해주세요.\n"
+    "제목: (원문과 다른 표현으로 핵심을 담은 제목, 30자 이내)\n"
+    "내용: (200자 내외로 핵심만 간결하게 요약, 사실은 정확하게 유지)\n\n"
+    "반드시 '제목:'과 '내용:' 형식을 지켜주세요."
 )
 
 # 중복 판단: 핵심 명사가 이 비율 이상 겹치면 중복
@@ -184,9 +186,10 @@ def fetch_naver_news(query: str, display: int = 20) -> list:
         return []
 
 
-def rewrite_with_groq(text: str) -> str:
+def rewrite_with_groq(text: str, original_title: str) -> dict:
+    """제목과 내용을 함께 재작성. {'title': ..., 'summary': ...} 반환"""
     if not GROQ_API_KEY:
-        return text
+        return {"title": original_title, "summary": text}
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json",
@@ -200,10 +203,21 @@ def rewrite_with_groq(text: str) -> str:
     try:
         resp = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=30)
         resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"].strip()
+        result = resp.json()["choices"][0]["message"]["content"].strip()
+
+        # 제목: / 내용: 파싱
+        new_title = original_title
+        summary = result
+        for line in result.split("\n"):
+            if line.startswith("제목:"):
+                new_title = line.replace("제목:", "").strip()
+            elif line.startswith("내용:"):
+                summary = line.replace("내용:", "").strip()
+
+        return {"title": new_title, "summary": summary}
     except Exception as exc:
         print(f"[Groq] 오류: {exc}")
-        return text
+        return {"title": original_title, "summary": text}
 
 
 # ---------------------------------------------------------------------------
@@ -259,12 +273,13 @@ def main():
         source = item.get("link", "").split("/")[2] if item.get("link") else ""
 
         print(f"[+] 새 기사: {title[:50]}")
-        summary = rewrite_with_groq(f"{title}\n{description}")
+        rewritten = rewrite_with_groq(f"{title}\n{description}", title)
 
         new_article = {
             "article_id": article_id,
-            "title": title,
-            "summary": summary,
+            "title": rewritten["title"],
+            "original_title": title,
+            "summary": rewritten["summary"],
             "original_url": original_url,
             "url": original_url,
             "source": source,
