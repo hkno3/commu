@@ -41,6 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+let catExpanded = false;
+
 function buildCategoryNav() {
   const nav = document.getElementById('cat-nav-inner');
   if (!nav) return;
@@ -51,12 +53,20 @@ function buildCategoryNav() {
     btn.className = 'cat-btn' + (key === currentCategory ? ' active' : '');
     btn.textContent = cat;
     btn.dataset.catKey = key;
-    if (key !== 'all') {
-      btn.style.setProperty('--dot-color', CAT_COLORS[key] || '#1a73e8');
-    }
     btn.onclick = () => switchCategory(key, btn);
     nav.appendChild(btn);
   });
+
+  // 더보기 버튼
+  const moreBtn = document.createElement('button');
+  moreBtn.className = 'cat-more-btn';
+  moreBtn.textContent = '더보기 ▼';
+  moreBtn.onclick = () => {
+    catExpanded = !catExpanded;
+    nav.classList.toggle('expanded', catExpanded);
+    moreBtn.textContent = catExpanded ? '접기 ▲' : '더보기 ▼';
+  };
+  nav.appendChild(moreBtn);
 }
 
 function switchCategory(cat, btnEl) {

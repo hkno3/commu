@@ -52,36 +52,53 @@ header {
 .cat-nav {
   background: #fff;
   border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-  scrollbar-width: none;
+  padding: 4px 20px;
 }
-.cat-nav::-webkit-scrollbar { display: none; }
 
 .cat-nav-inner {
   display: flex;
-  padding: 0 20px;
+  flex-wrap: wrap;
   gap: 4px;
-  width: max-content;
-  min-width: 100%;
+  overflow: hidden;
+  max-height: 44px;
+  transition: max-height 0.3s ease;
+}
+
+.cat-nav-inner.expanded {
+  max-height: 200px;
 }
 
 .cat-btn {
-  padding: 10px 16px;
-  border: none;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
   background: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-muted);
   white-space: nowrap;
-  border-bottom: 2px solid transparent;
   transition: all 0.2s;
 }
-.cat-btn:hover { color: var(--primary); }
+.cat-btn:hover { color: var(--primary); border-color: var(--primary); }
 .cat-btn.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
+  color: #fff;
+  background: var(--primary);
+  border-color: var(--primary);
   font-weight: 600;
 }
+
+.cat-more-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.cat-more-btn:hover { color: var(--primary); border-color: var(--primary); }
 
 /* ── Main Layout ── */
 .main-wrap {
