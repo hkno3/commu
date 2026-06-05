@@ -34,19 +34,25 @@ DATA_DIR = "data"
 PUBLISHED_FILE = os.path.join(DATA_DIR, "published.json")
 MAX_PUBLISHED = 500
 
+_CAT_LIST = "정치, 경제, 사회, 생활/문화, 세계, IT/과학, 부동산, 헬스/건강, 스포츠, 연예, 자동차, 날씨, 가상화폐, 주식, 육아, 여행, 게임, 패션/뷰티, 음식/맛집, 교육, 환경, 법률, 취업/직장, 반려동물, 영화"
+
 REWRITE_PROMPT = (
-    "다음 뉴스 기사를 커뮤니티 토론 게시글 형식으로 작성해주세요.\n\n"
+    "다음 뉴스 기사를 친근한 커뮤니티 게시글처럼 재작성해주세요.\n\n"
+    "반드시 아래 형식 그대로 출력하세요 (마크다운 ** 기호 절대 사용 금지):\n\n"
     "제목: (핵심을 담은 자연스러운 한국어 제목. 단어 중간에 자르지 말 것. 30자 이내)\n"
+    f"카테고리: (아래 목록 중 기사 내용에 가장 맞는 것 1개만 정확히 그대로 쓸 것)\n"
+    f"  [{_CAT_LIST}]\n"
     "내용: 아래 구조로 작성\n"
-    "  1. 기사 핵심 내용을 2~3문장으로 요약 (사실 정확히 유지)\n"
-    "  2. 줄바꿈 후 이 사안의 핵심 쟁점이나 논란 포인트 1~2문장\n"
-    "  3. 줄바꿈 후 독자에게 의견을 묻는 질문 1개 (예: '여러분은 어떻게 생각하시나요?')\n"
+    "  1. 기사 핵심 내용을 2~3문장으로 친근하게 요약 (마치 친구한테 얘기하듯이, 사실은 정확히 유지)\n"
+    "  2. 줄바꿈 후 이 사안에서 흥미롭거나 논란이 될 만한 포인트 1~2문장 (가볍고 재미있게)\n"
+    "  3. 줄바꿈 후 독자에게 의견을 묻는 질문 1개 (편하고 자연스럽게)\n"
     "  전체 300자 내외\n\n"
     "주의사항:\n"
+    "- ** 같은 마크다운 기호 절대 사용하지 말 것\n"
+    "- 딱딱한 뉴스 문체(~했습니다, ~입니다) 대신 부드러운 구어체(~했대요, ~라고 하네요, ~이래요) 사용\n"
     "- 제목은 완전한 문장이나 구로 끝낼 것\n"
     "- 단어를 중간에 자르거나 생략하지 말 것\n"
-    "- '제목:'과 '내용:' 형식을 반드시 지킬 것\n"
-    "- 내용은 자연스러운 구어체로 작성할 것"
+    "- '제목:', '카테고리:', '내용:' 앞에 ** 붙이지 말 것. 정확히 해당 단어로만 시작할 것"
 )
 
 # 중복 판단: 핵심 명사가 이 비율 이상 겹치면 중복
@@ -122,7 +128,9 @@ def make_article_id(url: str) -> str:
 
 
 def strip_html(text: str) -> str:
-    return re.sub(r"<[^>]+>", "", text).strip()
+    text = re.sub(r"<[^>]+>", "", text)
+    text = text.replace("&quot;", '"').replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&apos;", "'").replace("&#39;", "'")
+    return text.strip()
 
 
 def get_current_category() -> str:
@@ -205,32 +213,48 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
     }
     payload = {
         "model": ANTHROPIC_MODEL,
-        "max_tokens": 500,
+        "max_tokens": 600,
         "messages": [{"role": "user", "content": f"{REWRITE_PROMPT}\n\n{text}"}],
     }
     try:
         resp = requests.post(ANTHROPIC_API_URL, headers=headers, json=payload, timeout=30)
         resp.raise_for_status()
         result = resp.json()["content"][0]["text"].strip()
+        print(f"[Claude 응답]\n{result[:200]}")
 
-        # 제목: / 내용: 파싱
-        new_title = original_title
+        # ** 마크다운 제거
+        result = result.replace("**", "").replace("*", "")
+
+        # 제목: / 카테고리: / 내용: 파싱
+        new_title = None
+        new_category = None
         summary_lines = []
         in_content = False
         for line in result.split("\n"):
             stripped = line.strip()
-            if stripped.startswith("제목:"):
-                new_title = stripped.replace("제목:", "").strip()
-            elif stripped.startswith("내용:"):
-                content_part = stripped.replace("내용:", "").strip()
+            if re.match(r"^제\s*목\s*[:：]", stripped):
+                new_title = re.sub(r"^제\s*목\s*[:：]\s*", "", stripped).strip()
+            elif re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
+                new_category = re.sub(r"^카\s*테\s*고\s*리\s*[:：]\s*", "", stripped).strip()
+            elif re.match(r"^내\s*용\s*[:：]", stripped):
+                content_part = re.sub(r"^내\s*용\s*[:：]\s*", "", stripped).strip()
                 if content_part:
                     summary_lines.append(content_part)
                 in_content = True
             elif in_content and stripped:
                 summary_lines.append(stripped)
 
-        summary = "\n".join(summary_lines) if summary_lines else result
-        return {"title": new_title, "summary": summary}
+        if not new_title:
+            print(f"[Claude] 제목 파싱 실패, 원본 제목 사용")
+            new_title = original_title
+        if not summary_lines:
+            print(f"[Claude] 내용 파싱 실패, 전체 응답 사용")
+            summary_lines = [result]
+        if new_category:
+            print(f"[Claude] 카테고리 분류: {new_category}")
+
+        summary = "\n".join(summary_lines)
+        return {"title": new_title, "summary": summary, "category": new_category}
     except Exception as exc:
         print(f"[Claude] 오류: {exc}")
         return {"title": original_title, "summary": text}
@@ -291,6 +315,13 @@ def main():
         print(f"[+] 새 기사: {title[:50]}")
         rewritten = rewrite_with_claude(f"{title}\n{description}", title)
 
+        # Claude가 분류한 카테고리가 유효하면 사용, 아니면 검색 카테고리 유지
+        claude_cat = rewritten.get("category", "")
+        if claude_cat and claude_cat in CATEGORIES:
+            final_category = claude_cat
+        else:
+            final_category = category
+
         new_article = {
             "article_id": article_id,
             "title": rewritten["title"],
@@ -301,8 +332,8 @@ def main():
             "source": source,
             "pubDate": pub_date,
             "pub_date": pub_date,
-            "category": category.replace("/", "_"),
-            "category_label": category,
+            "category": final_category.replace("/", "_"),
+            "category_label": final_category,
         }
 
         # 발행 이력에 추가
