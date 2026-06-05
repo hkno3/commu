@@ -85,7 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
             unset($a);
             file_put_contents($latest_path, json_encode($latest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         }
-        header('Location: /admin_rudwnQkd1/?edited=1&cat=' . urlencode($_POST['cur_cat'] ?? $new_cat));
+        // 수정한 카테고리 탭으로 이동 (category_label = display name with /)
+        $redirect_cat = $new_cat_label ?: str_replace('_', '/', $new_cat);
+        header('Location: /admin_rudwnQkd1/?edited=1&cat=' . urlencode($redirect_cat));
         exit;
     }
 }
@@ -118,16 +120,30 @@ $all_cats = ["정치","경제","사회","생활/문화","세계","IT/과학","�
 $cur_cat = $_GET['cat'] ?? '전체';
 $articles = [];
 if ($is_auth) {
-    $load_cats = $cur_cat === '전체' ? $all_cats : [$cur_cat];
-    foreach ($load_cats as $cat) {
-        $path = DATA_DIR . '/' . str_replace('/', '_', $cat) . '.json';
+    if ($cur_cat === '전체') {
+        // 전체: latest.json 우선 사용 (안정적)
+        $latest_path = DATA_DIR . '/latest.json';
+        if (file_exists($latest_path)) {
+            $articles = json_decode(file_get_contents($latest_path), true) ?: [];
+        }
+        // latest.json 없으면 카테고리 파일 병합
+        if (empty($articles)) {
+            foreach ($all_cats as $cat) {
+                $path = DATA_DIR . '/' . str_replace('/', '_', $cat) . '.json';
+                if (file_exists($path)) {
+                    $items = json_decode(file_get_contents($path), true) ?: [];
+                    $articles = array_merge($articles, $items);
+                }
+            }
+            usort($articles, fn($a, $b) => strcmp($b['pub_date'] ?? $b['pubDate'] ?? '', $a['pub_date'] ?? $a['pubDate'] ?? ''));
+        }
+    } else {
+        $path = DATA_DIR . '/' . str_replace('/', '_', $cur_cat) . '.json';
         if (file_exists($path)) {
-            $items = json_decode(file_get_contents($path), true) ?: [];
-            $articles = array_merge($articles, $items);
+            $articles = json_decode(file_get_contents($path), true) ?: [];
         }
     }
-    usort($articles, fn($a, $b) => strcmp($b['pub_date'] ?? '', $a['pub_date'] ?? ''));
-    $articles = array_slice($articles, 0, 30);
+    $articles = array_slice($articles, 0, 50);
 }
 ?>
 <!DOCTYPE html>
@@ -228,7 +244,7 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
       </a>
     <?php endforeach; ?>
   </div>
-  <p style="color:#888; margin-bottom:16px;">총 <?= count($articles) ?>개 기사 (최신 30개)</p>
+  <p style="color:#888; margin-bottom:16px;">총 <?= count($articles) ?>개 기사</p>
 
   <?php foreach ($articles as $a): ?>
     <?php
