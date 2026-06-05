@@ -1,6 +1,33 @@
 <?php
 require_once __DIR__ . '/config.php';
 
+// ── RSS 피드 가져오기 (1시간 캐싱) ──
+function fetch_rss(string $url, string $cache_key, int $ttl = 3600): array {
+    $cache_file = sys_get_temp_dir() . '/nc_rss_' . $cache_key . '.json';
+    if (file_exists($cache_file) && (time() - filemtime($cache_file)) < $ttl) {
+        return json_decode(file_get_contents($cache_file), true) ?: [];
+    }
+    $items = [];
+    try {
+        $ctx = stream_context_create(['http' => ['timeout' => 5, 'user_agent' => 'Mozilla/5.0']]);
+        $xml = @simplexml_load_file($url, 'SimpleXMLElement', LIBXML_NOCDATA, '', false, $ctx);
+        if ($xml && isset($xml->channel->item)) {
+            foreach (array_slice((array)$xml->channel->item, 0, 5) as $item) {
+                $items[] = [
+                    'title' => html_entity_decode((string)($item['title'] ?? $item->title ?? ''), ENT_QUOTES, 'UTF-8'),
+                    'link'  => (string)($item['link'] ?? $item->link ?? '#'),
+                    'date'  => (string)($item['pubDate'] ?? $item->pubDate ?? ''),
+                ];
+            }
+        }
+    } catch (Exception $e) {}
+    if ($items) file_put_contents($cache_file, json_encode($items));
+    return $items;
+}
+
+$rss_body    = fetch_rss('https://bodyandwell.com/feed/', 'body');
+$rss_biz     = fetch_rss('https://bizachieve.com/feed/', 'biz');
+
 // slug 또는 id로 조회
 $lookup_slug = preg_replace('/[^a-z0-9-]/', '', strtolower(trim($_GET['slug'] ?? '')));
 $article_id  = preg_replace('/[^a-f0-9]/i', '', trim($_GET['id'] ?? ''));
@@ -239,8 +266,44 @@ $og_url = $article_slug
       </div>
     </div>
 
-    <!-- 오른쪽: 댓글 패널 -->
+    <!-- 오른쪽: 사이드 패널 -->
     <div class="comment-panel">
+
+      <!-- 추천 글 -->
+      <?php if ($rss_body || $rss_biz): ?>
+      <div class="rss-panel">
+        <?php if ($rss_body): ?>
+        <div class="rss-section">
+          <div class="rss-site-label">
+            <a href="https://bodyandwell.com" target="_blank" rel="noopener">💪 bodyandwell.com</a>
+          </div>
+          <ul class="rss-list">
+            <?php foreach ($rss_body as $item): ?>
+            <li><a href="<?= htmlspecialchars($item['link']) ?>" target="_blank" rel="noopener">
+              <?= htmlspecialchars($item['title']) ?>
+            </a></li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+        <?php endif; ?>
+        <?php if ($rss_biz): ?>
+        <div class="rss-section">
+          <div class="rss-site-label">
+            <a href="https://bizachieve.com" target="_blank" rel="noopener">💼 bizachieve.com</a>
+          </div>
+          <ul class="rss-list">
+            <?php foreach ($rss_biz as $item): ?>
+            <li><a href="<?= htmlspecialchars($item['link']) ?>" target="_blank" rel="noopener">
+              <?= htmlspecialchars($item['title']) ?>
+            </a></li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+        <?php endif; ?>
+      </div>
+      <?php endif; ?>
+
+      <!-- 댓글 -->
       <div class="comment-panel-header">
         💬 댓글
         <span id="comment-count-badge" style="font-size:12px; color:var(--text-muted); font-weight:400; margin-left:6px;"></span>
