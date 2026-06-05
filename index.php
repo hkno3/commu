@@ -30,42 +30,10 @@ require_once __DIR__ . '/config.php';
 </nav>
 
 <div class="main-wrap">
-  <div class="shorts-container">
-    <!-- 왼쪽: 기사 목록 + 상세 -->
-    <div class="article-panel">
-      <div id="article-detail">
-        <div class="empty-state">왼쪽에서 기사를 선택하세요.</div>
-      </div>
-      <div class="article-list" id="article-list">
-        <div class="loading">기사 불러오는 중...</div>
-      </div>
-      <!-- Infinite scroll sentinel -->
-      <div id="scroll-sentinel" style="height:20px;"></div>
-    </div>
-
-    <!-- 오른쪽: 댓글 -->
-    <div class="comment-panel">
-      <div class="comment-panel-header">💬 실시간 토론
-        <span id="comment-count-badge" style="font-size:12px; color:var(--text-muted); font-weight:400;"></span>
-      </div>
-      <div class="comment-list" id="comment-list">
-        <div class="empty-state">기사를 선택하면 댓글이 표시됩니다.</div>
-      </div>
-      <div id="load-more-comments" style="display:none; text-align:center; padding:8px;">
-        <button onclick="loadMoreComments()" style="padding:6px 20px; border:1px solid var(--border); border-radius:20px; background:#fff; cursor:pointer; font-size:12px;">
-          댓글 더 보기
-        </button>
-      </div>
-      <div class="comment-form">
-        <form onsubmit="submitComment(event)">
-          <input type="text" name="nickname" placeholder="닉네임 (선택, 기본: 익명)" maxlength="20">
-          <textarea name="content" placeholder="댓글을 입력하세요..." rows="3" maxlength="500" required></textarea>
-          <div id="comment-error" style="color:#e74c3c; font-size:12px; margin-bottom:6px; display:none;"></div>
-          <button type="submit" class="comment-submit-btn" id="comment-btn">댓글 등록</button>
-        </form>
-      </div>
-    </div>
+  <div class="article-list" id="article-list">
+    <div class="loading">기사 불러오는 중...</div>
   </div>
+  <div id="scroll-sentinel" style="height:20px;"></div>
 </div>
 
 <script src="/assets/js/main.js"></script>

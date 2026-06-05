@@ -123,7 +123,6 @@ async function loadArticles(reset = false) {
         articles = [...articles, ...data.articles];
       }
       appendArticleCards(data.articles, reset);
-      if (reset && articles.length > 0) selectArticle(articles[0]);
       page++;
     } else if (reset) {
       if (listEl) listEl.innerHTML = '<div class="empty-state">기사가 없습니다.</div>';
@@ -180,7 +179,7 @@ function createArticleCard(article) {
       <span class="comment-count">💬 <span id="cnt-${article.article_id}">${article.comment_count || 0}</span></span>
     </div>
   `;
-  card.onclick = () => selectArticle(article);
+  card.onclick = () => { window.location.href = `/article.php?id=${encodeURIComponent(article.article_id)}`; };
   return card;
 }
 
