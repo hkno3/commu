@@ -1,0 +1,46 @@
+name: Fetch News and Deploy
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+jobs:
+  fetch-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          pip install requests groq
+
+      - name: Fetch and rewrite news
+        env:
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          python .github/workflows/fetch_news.py
+
+      - name: Deploy to FastComet via FTP
+        uses: SamKirkland/FTP-Deploy-Action@4.3.4
+        with:
+          server: newscommu.com
+          username: bizachie
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: /home6/bizachie/newscommu.com/
+          local-dir: ./
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            .github/workflows/fetch_news.py
+            README.md
