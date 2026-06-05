@@ -20,7 +20,50 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install requests groq
+          pip install requests groq ftplib2 || pip install requests groq
+
+      - name: Download data files from server
+        run: |
+          python - <<'EOF'
+          import ftplib, os, json
+
+          HOST = "ftp.bizachieve.com"
+          USER = "newscommu@newscommu.com"
+          PASS = "${{ secrets.FTP_PASSWORD }}"
+          FILES = ["data/published.json", "data/latest.json"]
+
+          os.makedirs("data", exist_ok=True)
+
+          try:
+              ftp = ftplib.FTP(HOST)
+              ftp.login(USER, PASS)
+              for f in FILES:
+                  try:
+                      with open(f, "wb") as fp:
+                          ftp.retrbinary(f"RETR {f}", fp.write)
+                      print(f"Downloaded: {f}")
+                  except Exception as e:
+                      print(f"Skip {f}: {e}")
+              # Download category json files
+              try:
+                  ftp.cwd("data")
+                  files = ftp.nlst()
+                  ftp.cwd("..")
+                  for fname in files:
+                      if fname.endswith(".json") and fname not in ["published.json", "latest.json"]:
+                          local = f"data/{fname}"
+                          try:
+                              with open(local, "wb") as fp:
+                                  ftp.retrbinary(f"RETR data/{fname}", fp.write)
+                              print(f"Downloaded: data/{fname}")
+                          except Exception as e:
+                              print(f"Skip data/{fname}: {e}")
+              except Exception as e:
+                  print(f"data dir error: {e}")
+              ftp.quit()
+          except Exception as e:
+              print(f"FTP error: {e}")
+          EOF
 
       - name: Fetch and rewrite news
         env:
