@@ -180,10 +180,7 @@ function createArticleCard(article) {
     </div>
   `;
   card.onclick = () => {
-    const url = article.slug
-      ? `/article/${encodeURIComponent(article.slug)}`
-      : `/article.php?id=${encodeURIComponent(article.article_id)}`;
-    window.location.href = url;
+    window.location.href = `/article.php?id=${encodeURIComponent(article.article_id)}`;
   };
   return card;
 }

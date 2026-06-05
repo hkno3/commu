@@ -96,12 +96,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
 if (isset($_GET['delete']) && ($_SESSION['admin_auth'] ?? false)) {
     $del_id  = preg_replace('/[^a-f0-9]/i', '', $_GET['delete']);
     $del_cat = preg_replace('/[^a-zA-Z_\/가-힣]/', '', $_GET['cat'] ?? '');
+    $del_error = '';
     if ($del_id && $del_cat) {
         $path = DATA_DIR . '/' . str_replace('/', '_', $del_cat) . '.json';
-        if (file_exists($path)) {
+        if (!file_exists($path)) {
+            $del_error = "파일 없음: $path";
+        } else {
             $articles = json_decode(file_get_contents($path), true) ?: [];
             $articles = array_values(array_filter($articles, fn($a) => ($a['article_id'] ?? '') !== $del_id));
-            file_put_contents($path, json_encode($articles, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+            $r1 = file_put_contents($path, json_encode($articles, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+            if ($r1 === false) $del_error = "쓰기 실패: $path";
         }
         $latest_path = DATA_DIR . '/latest.json';
         if (file_exists($latest_path)) {
@@ -109,7 +113,11 @@ if (isset($_GET['delete']) && ($_SESSION['admin_auth'] ?? false)) {
             $latest = array_values(array_filter($latest, fn($a) => ($a['article_id'] ?? '') !== $del_id));
             file_put_contents($latest_path, json_encode($latest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         }
-        header('Location: /admin_rudwnQkd1/?deleted=1');
+        if ($del_error) {
+            header('Location: /admin_rudwnQkd1/?del_error=' . urlencode($del_error));
+        } else {
+            header('Location: /admin_rudwnQkd1/?deleted=1');
+        }
         exit;
     }
 }
@@ -220,6 +228,9 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
   <?php endif; ?>
   <?php if (isset($_GET['edited'])): ?>
     <div class="notice">✅ 기사가 수정되었습니다.</div>
+  <?php endif; ?>
+  <?php if (isset($_GET['del_error'])): ?>
+    <div class="notice" style="background:#f8d7da; color:#721c24;">❌ 삭제 오류: <?= htmlspecialchars($_GET['del_error']) ?><br>DATA_DIR: <?= DATA_DIR ?></div>
   <?php endif; ?>
 
   <!-- HEAD 코드 관리 -->
