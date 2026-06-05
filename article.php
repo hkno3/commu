@@ -2,6 +2,7 @@
 /**
  * newscommu.com - Article detail page
  * URL: /article.php?id={article_id}
+ * Updated: favicon fix
  */
 require_once __DIR__ . '/config.php';
 
