@@ -46,12 +46,20 @@ if (isset($_GET['delete']) && ($_SESSION['admin_auth'] ?? false)) {
 
 $is_auth = $_SESSION['admin_auth'] ?? false;
 
+$all_cats = ["정치","경제","사회","생활/문화","세계","IT/과학","부동산","헬스/건강","스포츠","연예","자동차","날씨","가상화폐","주식","육아","여행","게임","패션/뷰티","음식/맛집","교육","환경","법률","취업/직장","반려동물","영화"];
+$cur_cat = $_GET['cat'] ?? '전체';
 $articles = [];
 if ($is_auth) {
-    $latest_path = DATA_DIR . '/latest.json';
-    if (file_exists($latest_path)) {
-        $articles = json_decode(file_get_contents($latest_path), true) ?: [];
+    $load_cats = $cur_cat === '전체' ? $all_cats : [$cur_cat];
+    foreach ($load_cats as $cat) {
+        $path = DATA_DIR . '/' . str_replace('/', '_', $cat) . '.json';
+        if (file_exists($path)) {
+            $items = json_decode(file_get_contents($path), true) ?: [];
+            $articles = array_merge($articles, $items);
+        }
     }
+    usort($articles, fn($a, $b) => strcmp($b['pub_date'] ?? '', $a['pub_date'] ?? ''));
+    $articles = array_slice($articles, 0, 30);
 }
 ?>
 <!DOCTYPE html>
@@ -113,7 +121,16 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
     <div class="notice">✅ 기사가 삭제되었습니다.</div>
   <?php endif; ?>
 
-  <p style="color:#888; margin-bottom:16px;">총 <?= count($articles) ?>개 기사 (최신 50개 기준)</p>
+  <!-- 카테고리 탭 -->
+  <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px;">
+    <?php foreach (array_merge(['전체'], $all_cats) as $cat): ?>
+      <a href="?cat=<?= urlencode($cat) ?>" style="padding:4px 12px; border-radius:20px; font-size:13px; text-decoration:none;
+        <?= $cur_cat === $cat ? 'background:#1a73e8; color:#fff;' : 'background:#eee; color:#333;' ?>">
+        <?= htmlspecialchars($cat) ?>
+      </a>
+    <?php endforeach; ?>
+  </div>
+  <p style="color:#888; margin-bottom:16px;">총 <?= count($articles) ?>개 기사 (최신 30개)</p>
 
   <?php foreach ($articles as $a): ?>
     <?php
