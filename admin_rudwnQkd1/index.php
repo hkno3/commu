@@ -3,54 +3,15 @@ session_start();
 require_once __DIR__ . '/../config.php';
 
 define('ADMIN_HASH', 'e4a087445903115bf1a5f461a3b123b6ce48dae4e0e8c9f164894cda2b1ce004');
-define('ADMIN_EMAIL', 'across1211@naver.com');
-define('SMTP_HOST', 'mail.newscommu.com');
-define('SMTP_PORT', 465);
-define('SMTP_USER', 'admin@newscommu.com');
-define('SMTP_PASS', 'vCIRc[(!^8STn7R~');
 
-// 메일 발송 함수 (PHP mail() 사용)
-function send_otp_email(string $otp): bool {
-    $to      = ADMIN_EMAIL;
-    $subject = '[newscommu] 관리자 인증 코드: ' . $otp;
-    $message = "관리자 인증 코드입니다.\n\n코드: {$otp}\n\n5분 내에 입력하세요.\n\n본인이 아니라면 즉시 비밀번호를 변경하세요.";
-    $headers = implode("\r\n", [
-        'From: newscommu Admin <admin@newscommu.com>',
-        'Content-Type: text/plain; charset=UTF-8',
-        'X-Mailer: PHP/' . phpversion(),
-    ]);
-    return mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $message, $headers);
-}
-
-// ── 1단계: 비밀번호 확인 ──
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password']) && !isset($_SESSION['admin_pass_ok'])) {
+// ── 로그인 처리 ──
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
     if (hash('sha256', $_POST['password']) === ADMIN_HASH) {
-        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $_SESSION['admin_otp'] = $otp;
-        $_SESSION['admin_otp_time'] = time();
-        $_SESSION['admin_pass_ok'] = true;
-        $sent = send_otp_email($otp);
-        if (!$sent) {
-            unset($_SESSION['admin_pass_ok'], $_SESSION['admin_otp'], $_SESSION['admin_otp_time']);
-            $error = '이메일 발송 실패. 잠시 후 다시 시도해주세요.';
-        }
-    } else {
-        $error = '비밀번호가 틀렸습니다.';
-    }
-}
-
-// ── 2단계: OTP 확인 ──
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['otp']) && isset($_SESSION['admin_pass_ok'])) {
-    $otp_input = trim($_POST['otp']);
-    $otp_expired = (time() - ($_SESSION['admin_otp_time'] ?? 0)) > 300; // 5분
-    if (!$otp_expired && $otp_input === $_SESSION['admin_otp']) {
         $_SESSION['admin_auth'] = true;
-        unset($_SESSION['admin_otp'], $_SESSION['admin_otp_time'], $_SESSION['admin_pass_ok']);
         header('Location: /admin_rudwnQkd1/');
         exit;
     } else {
-        $otp_error = $otp_expired ? '인증 코드가 만료되었습니다. 다시 로그인해주세요.' : '인증 코드가 틀렸습니다.';
-        if ($otp_expired) unset($_SESSION['admin_pass_ok'], $_SESSION['admin_otp'], $_SESSION['admin_otp_time']);
+        $error = '비밀번호가 틀렸습니다.';
     }
 }
 
@@ -84,7 +45,6 @@ if (isset($_GET['delete']) && ($_SESSION['admin_auth'] ?? false)) {
 }
 
 $is_auth = $_SESSION['admin_auth'] ?? false;
-$pass_ok = $_SESSION['admin_pass_ok'] ?? false;
 
 $articles = [];
 if ($is_auth) {
@@ -129,33 +89,16 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
 </head>
 <body>
 
-<?php if (!$is_auth && !$pass_ok): ?>
-<!-- 1단계: 비밀번호 입력 -->
+<?php if (!$is_auth): ?>
 <div class="login-box">
   <h2>🔒 관리자 로그인</h2>
-  <p>1단계: 비밀번호를 입력하세요</p>
   <?php if (isset($error)): ?>
     <div class="error"><?= htmlspecialchars($error) ?></div>
   <?php endif; ?>
   <form method="POST">
     <input type="password" name="password" placeholder="비밀번호" autofocus>
-    <button type="submit">다음</button>
+    <button type="submit">로그인</button>
   </form>
-</div>
-
-<?php elseif (!$is_auth && $pass_ok): ?>
-<!-- 2단계: OTP 입력 -->
-<div class="login-box">
-  <h2>📧 이메일 인증</h2>
-  <p><?= htmlspecialchars(ADMIN_EMAIL) ?>로 발송된<br>6자리 코드를 입력하세요 (5분 유효)</p>
-  <?php if (isset($otp_error)): ?>
-    <div class="error"><?= htmlspecialchars($otp_error) ?></div>
-  <?php endif; ?>
-  <form method="POST">
-    <input type="text" name="otp" placeholder="인증 코드 6자리" maxlength="6" autofocus inputmode="numeric">
-    <button type="submit">확인</button>
-  </form>
-  <a class="back-link" href="?logout=1">← 처음으로</a>
 </div>
 
 <?php else: ?>
