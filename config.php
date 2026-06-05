@@ -7,10 +7,10 @@
 // ---------------------------------------------------------------------------
 // Database
 // ---------------------------------------------------------------------------
-define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-define('DB_NAME', getenv('DB_NAME') ?: 'newscommu');
-define('DB_USER', getenv('DB_USER') ?: 'db_user');
-define('DB_PASS', getenv('DB_PASS') ?: 'db_password');
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'bizachie_newscommu');
+define('DB_USER', 'bizachie_nc');
+define('DB_PASS', 'VYrudejr!@11');
 define('DB_CHARSET', 'utf8mb4');
 
 // ---------------------------------------------------------------------------
