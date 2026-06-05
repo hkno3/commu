@@ -7,6 +7,7 @@
 <title><?= $title ?> - newscommu.com</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg">
 <link rel="stylesheet" href="/assets/css/style.css">
 <style>
 .page-wrap { max-width: 860px; margin: 40px auto; padding: 0 20px 60px; }

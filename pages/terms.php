@@ -6,7 +6,8 @@
   <title>이용약관 - newscommu.com</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg">
+<link rel="stylesheet" href="/assets/css/style.css">
   <style>
     .page-wrap { max-width: 860px; margin: 0 auto; padding: 40px 20px 60px; }
     .page-title { font-size: 26px; font-weight: 700; margin-bottom: 8px; color: var(--text); border-bottom: 2px solid var(--primary); padding-bottom: 14px; }
