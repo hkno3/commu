@@ -7,7 +7,7 @@
   <meta name="description" content="newscommu.com 매체소개 페이지입니다.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" href="/assets/images/favicon.png">
 <link rel="stylesheet" href="/assets/css/style.css">
   <style>
     .page-wrap { max-width: 860px; margin: 0 auto; padding: 40px 20px 60px; }
@@ -31,7 +31,7 @@
 
 <header>
   <div class="header-inner">
-    <a class="logo" href="/">📰 newscommu.com</a>
+    <a class="logo" href="/"><img src="/assets/images/favicon.png" alt="로고" style="width:28px;height:28px;vertical-align:middle;margin-right:6px;border-radius:6px;"> newscommu.com</a>
   </div>
 </header>
 
