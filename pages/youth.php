@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="/assets/images/favicon.png">
 <link rel="stylesheet" href="/assets/css/style.css">
+  <?php require_once __DIR__ . '/../includes/head_codes.php'; ?>
 <style>
 .page-wrap { max-width: 860px; margin: 40px auto; padding: 0 20px 60px; }
 .page-wrap h1 { font-size: 24px; font-weight: 700; margin-bottom: 30px; padding-bottom: 12px; border-bottom: 2px solid #1a73e8; }
