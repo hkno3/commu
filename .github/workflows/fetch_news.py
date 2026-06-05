@@ -209,34 +209,44 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
     }
     payload = {
         "model": ANTHROPIC_MODEL,
-        "max_tokens": 500,
+        "max_tokens": 600,
         "messages": [{"role": "user", "content": f"{REWRITE_PROMPT}\n\n{text}"}],
     }
     try:
         resp = requests.post(ANTHROPIC_API_URL, headers=headers, json=payload, timeout=30)
         resp.raise_for_status()
         result = resp.json()["content"][0]["text"].strip()
+        print(f"[Claude 응답]\n{result[:200]}")
 
         # ** 마크다운 제거
-        result = result.replace("**", "")
+        result = result.replace("**", "").replace("*", "")
 
-        # 제목: / 내용: 파싱
-        new_title = original_title
+        # 제목: / 내용: 파싱 (앞뒤 공백, 콜론 변형 모두 처리)
+        new_title = None
         summary_lines = []
         in_content = False
         for line in result.split("\n"):
             stripped = line.strip()
-            if stripped.startswith("제목:"):
-                new_title = stripped.replace("제목:", "").strip()
-            elif stripped.startswith("내용:"):
-                content_part = stripped.replace("내용:", "").strip()
+            # 제목 파싱: "제목:", "제 목:" 등 변형 대응
+            if re.match(r"^제\s*목\s*[:：]", stripped):
+                new_title = re.sub(r"^제\s*목\s*[:：]\s*", "", stripped).strip()
+            elif re.match(r"^내\s*용\s*[:：]", stripped):
+                content_part = re.sub(r"^내\s*용\s*[:：]\s*", "", stripped).strip()
                 if content_part:
                     summary_lines.append(content_part)
                 in_content = True
             elif in_content and stripped:
                 summary_lines.append(stripped)
 
-        summary = "\n".join(summary_lines) if summary_lines else result
+        # 파싱 실패 시 전체를 내용으로 사용
+        if not new_title:
+            print(f"[Claude] 제목 파싱 실패, 원본 제목 사용")
+            new_title = original_title
+        if not summary_lines:
+            print(f"[Claude] 내용 파싱 실패, 전체 응답 사용")
+            summary_lines = [result]
+
+        summary = "\n".join(summary_lines)
         return {"title": new_title, "summary": summary}
     except Exception as exc:
         print(f"[Claude] 오류: {exc}")
