@@ -83,6 +83,9 @@ function switchCategory(cat, btnEl) {
   articles = [];
   document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
   btnEl.classList.add('active');
+  // 기사 상세 초기화
+  const detail = document.getElementById('article-detail');
+  if (detail) detail.innerHTML = '<div class="empty-state">기사를 선택하세요.</div>';
   loadArticles(true);
 }
 
