@@ -229,6 +229,7 @@ header {
   margin-bottom: 20px;
 }
 
+.article-detail-header h1,
 .article-detail-header h2 {
   font-size: 22px;
   font-weight: 700;
@@ -268,6 +269,29 @@ header {
   background: var(--comment-bg);
   border-radius: 8px;
   border-left: 3px solid var(--primary);
+}
+.article-body {
+  font-size: 15px;
+  line-height: 1.85;
+  margin: 20px 0;
+  color: var(--text-main);
+}
+.article-body h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 24px 0 10px;
+  color: var(--text-main);
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--border);
+}
+.article-body h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 18px 0 8px;
+  color: var(--primary);
+}
+.article-body p {
+  margin-bottom: 14px;
 }
 
 /* ── Comments ── */
