@@ -87,3 +87,4 @@ jobs:
             **/node_modules/**
             .github/workflows/fetch_news.py
             README.md
+            assets/images/favicon.png

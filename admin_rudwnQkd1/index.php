@@ -22,6 +22,14 @@ if (isset($_GET['logout'])) {
     exit;
 }
 
+// ── HEAD 코드 저장 ──
+$head_codes_file = DATA_DIR . '/head_codes.txt';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['head_codes']) && ($_SESSION['admin_auth'] ?? false)) {
+    file_put_contents($head_codes_file, $_POST['head_codes']);
+    $head_saved = true;
+}
+$head_codes = file_exists($head_codes_file) ? file_get_contents($head_codes_file) : '';
+
 // ── 기사 삭제 ──
 if (isset($_GET['delete']) && ($_SESSION['admin_auth'] ?? false)) {
     $del_id  = preg_replace('/[^a-f0-9]/i', '', $_GET['delete']);
@@ -120,6 +128,19 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
   <?php if (isset($_GET['deleted'])): ?>
     <div class="notice">✅ 기사가 삭제되었습니다.</div>
   <?php endif; ?>
+
+  <!-- HEAD 코드 관리 -->
+  <div style="background:#fff; border-radius:8px; padding:20px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <h2 style="font-size:16px; margin-bottom:12px;">🔧 &lt;head&gt; 코드 관리</h2>
+    <p style="font-size:12px; color:#888; margin-bottom:10px;">구글 서치콘솔, 네이버 서치어드바이저, 애드센스, 애널리틱스 등 코드를 입력하세요. 모든 페이지 &lt;head&gt;에 자동 삽입됩니다.</p>
+    <?php if (isset($head_saved)): ?>
+      <div class="notice">✅ 저장되었습니다.</div>
+    <?php endif; ?>
+    <form method="POST">
+      <textarea name="head_codes" rows="8" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-family:monospace; font-size:13px; resize:vertical;"><?= htmlspecialchars($head_codes) ?></textarea>
+      <button type="submit" style="margin-top:8px; padding:8px 24px; background:#1a73e8; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer;">저장</button>
+    </form>
+  </div>
 
   <!-- 카테고리 탭 -->
   <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px;">

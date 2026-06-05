@@ -15,11 +15,19 @@ const CAT_COLORS = {
   '정치': '#c0392b', '경제': '#27ae60', '사회': '#2980b9',
   '생활_문화': '#e67e22', '세계': '#8e44ad', 'IT_과학': '#16a085',
   '부동산': '#d35400', '헬스_건강': '#1abc9c', '스포츠': '#2471a3', '연예': '#c0392b',
+  '자동차': '#7f8c8d', '날씨': '#2980b9', '가상화폐': '#f39c12', '주식': '#27ae60',
+  '육아': '#e91e8c', '여행': '#00897b', '게임': '#6c3483', '패션_뷰티': '#e91e63',
+  '음식_맛집': '#e74c3c', '교육': '#1565c0', '환경': '#2e7d32', '법률': '#4a235a',
+  '취업_직장': '#1a237e', '반려동물': '#ff6f00', '영화': '#880e4f',
 };
 const CAT_BG = {
   '정치': '#fff0f0', '경제': '#f0fff4', '사회': '#f0f4ff',
   '생활_문화': '#fff8f0', '세계': '#f5f0ff', 'IT_과학': '#f0fffe',
   '부동산': '#fffbf0', '헬스_건강': '#f0fff8', '스포츠': '#f0f8ff', '연예': '#fff0fb',
+  '자동차': '#f5f5f5', '날씨': '#e3f2fd', '가상화폐': '#fff8e1', '주식': '#f1f8e9',
+  '육아': '#fce4ec', '여행': '#e0f2f1', '게임': '#f3e5f5', '패션_뷰티': '#fce4ec',
+  '음식_맛집': '#fff3e0', '교육': '#e8eaf6', '환경': '#e8f5e9', '법률': '#f3e5f5',
+  '취업_직장': '#e8eaf6', '반려동물': '#fff3e0', '영화': '#fce4ec',
 };
 
 // Allow category to be preset from PHP (category.php / article.php)
@@ -83,6 +91,9 @@ function switchCategory(cat, btnEl) {
   articles = [];
   document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
   btnEl.classList.add('active');
+  // 기사 상세 초기화
+  const detail = document.getElementById('article-detail');
+  if (detail) detail.innerHTML = '<div class="empty-state">기사를 선택하세요.</div>';
   loadArticles(true);
 }
 
@@ -159,7 +170,7 @@ function createArticleCard(article) {
   const bg    = CAT_BG[catKey]    || '#e8f0fe';
   card.innerHTML = `
     <div class="article-card-meta">
-      <span class="cat-badge" style="background:${bg}; color:${color};">${escHtml(article.category || '')}</span>
+      <span class="cat-badge" style="background:${bg}; color:${color};">${escHtml(article.category_label || article.category || '')}</span>
       <span class="source-name">${escHtml(article.source || '')}</span>
       <span class="pub-date">${formatDate(article.pub_date || article.pubDate)}</span>
     </div>
@@ -210,7 +221,7 @@ function renderArticleDetail(article) {
   panel.innerHTML = `
     <div class="article-detail-header">
       <div class="article-detail-meta">
-        <span class="cat-badge" style="background:${bg}; color:${color};">${escHtml(article.category || '')}</span>
+        <span class="cat-badge" style="background:${bg}; color:${color};">${escHtml(article.category_label || article.category || '')}</span>
         <span>${escHtml(article.source || '')}</span>
         <span>${formatDate(pubDate)}</span>
       </div>

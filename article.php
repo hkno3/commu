@@ -2,6 +2,7 @@
 /**
  * newscommu.com - Article detail page
  * URL: /article.php?id={article_id}
+ * Updated: favicon fix
  */
 require_once __DIR__ . '/config.php';
 
@@ -142,6 +143,7 @@ $og_url = SITE_URL . '/article.php?id=' . urlencode($article_id);
   <link rel="icon" type="image/png" href="/assets/images/favicon.png">
   <link rel="apple-touch-icon" href="/assets/images/favicon.png">
   <link rel="stylesheet" href="/assets/css/style.css">
+  <?php require_once __DIR__ . '/includes/head_codes.php'; ?>
 
   <!-- AdSense -->
   <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<?= ADSENSE_PUBLISHER_ID ?>" crossorigin="anonymous"></script> -->
