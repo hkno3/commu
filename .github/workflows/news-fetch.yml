@@ -36,7 +36,7 @@ jobs:
           server: ftp.bizachieve.com
           username: newscommu@newscommu.com
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /home6/bizachie/newscommu.com/
+          server-dir: /
           local-dir: ./
           exclude: |
             **/.git*
