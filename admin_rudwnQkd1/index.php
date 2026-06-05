@@ -30,6 +30,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['head_codes']) && ($_S
 }
 $head_codes = file_exists($head_codes_file) ? file_get_contents($head_codes_file) : '';
 
+// ── 기사 수정 ──
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESSION['admin_auth'] ?? false)) {
+    $edit_id      = preg_replace('/[^a-f0-9]/i', '', $_POST['edit_id']);
+    $old_cat      = trim($_POST['old_cat'] ?? '');
+    $new_cat      = trim($_POST['new_cat'] ?? '');
+    $new_title    = trim($_POST['new_title'] ?? '');
+    $new_summary  = trim($_POST['new_summary'] ?? '');
+    $new_cat_label = trim($_POST['new_cat_label'] ?? $new_cat);
+
+    if ($edit_id && $old_cat && $new_cat) {
+        // 기존 카테고리에서 기사 찾기
+        $old_path = DATA_DIR . '/' . $old_cat . '.json';
+        $article_data = null;
+        if (file_exists($old_path)) {
+            $old_articles = json_decode(file_get_contents($old_path), true) ?: [];
+            foreach ($old_articles as &$a) {
+                if (($a['article_id'] ?? '') === $edit_id) {
+                    $a['title']          = $new_title ?: $a['title'];
+                    $a['summary']        = $new_summary ?: $a['summary'];
+                    $a['category']       = $new_cat;
+                    $a['category_label'] = $new_cat_label;
+                    $article_data = $a;
+                    break;
+                }
+            }
+            unset($a);
+            // 카테고리 변경 시 기존 파일에서 제거
+            if ($old_cat !== $new_cat) {
+                $old_articles = array_values(array_filter($old_articles, fn($a) => ($a['article_id'] ?? '') !== $edit_id));
+            }
+            file_put_contents($old_path, json_encode($old_articles, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        }
+        // 새 카테고리 파일에 추가 (카테고리 변경 시)
+        if ($article_data && $old_cat !== $new_cat) {
+            $new_path = DATA_DIR . '/' . $new_cat . '.json';
+            $new_articles = file_exists($new_path) ? (json_decode(file_get_contents($new_path), true) ?: []) : [];
+            array_unshift($new_articles, $article_data);
+            file_put_contents($new_path, json_encode($new_articles, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        }
+        // latest.json 업데이트
+        $latest_path = DATA_DIR . '/latest.json';
+        if (file_exists($latest_path)) {
+            $latest = json_decode(file_get_contents($latest_path), true) ?: [];
+            foreach ($latest as &$a) {
+                if (($a['article_id'] ?? '') === $edit_id) {
+                    $a['title']          = $new_title ?: $a['title'];
+                    $a['summary']        = $new_summary ?: $a['summary'];
+                    $a['category']       = $new_cat;
+                    $a['category_label'] = $new_cat_label;
+                    break;
+                }
+            }
+            unset($a);
+            file_put_contents($latest_path, json_encode($latest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        }
+        header('Location: /admin_rudwnQkd1/?edited=1&cat=' . urlencode($_POST['cur_cat'] ?? $new_cat));
+        exit;
+    }
+}
+
 // ── 기사 삭제 ──
 if (isset($_GET['delete']) && ($_SESSION['admin_auth'] ?? false)) {
     $del_id  = preg_replace('/[^a-f0-9]/i', '', $_GET['delete']);
@@ -98,6 +158,20 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
 .article-summary { font-size: 13px; color: #555; margin-top: 6px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .del-btn { padding: 6px 14px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap; }
 .del-btn:hover { background: #c0392b; }
+.edit-btn { padding: 6px 14px; background: #1a73e8; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.edit-btn:hover { background: #1557b0; }
+.btn-group { display: flex; flex-direction: column; gap: 6px; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 12px; padding: 28px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+.modal h3 { font-size: 17px; margin-bottom: 20px; }
+.modal label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #444; }
+.modal input, .modal textarea, .modal select { width: 100%; padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 14px; font-family: inherit; }
+.modal textarea { resize: vertical; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+.btn-save { padding: 9px 24px; background: #1a73e8; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-save:hover { background: #1557b0; }
+.btn-cancel { padding: 9px 20px; background: #eee; color: #333; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
 .cat-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #e8f0fe; color: #1a73e8; font-weight: 600; margin-right: 6px; }
 .notice { background: #d4edda; color: #155724; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
 .back-link { font-size: 13px; color: #888; display: block; text-align: center; margin-top: 12px; cursor: pointer; text-decoration: underline; }
@@ -127,6 +201,9 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
 
   <?php if (isset($_GET['deleted'])): ?>
     <div class="notice">✅ 기사가 삭제되었습니다.</div>
+  <?php endif; ?>
+  <?php if (isset($_GET['edited'])): ?>
+    <div class="notice">✅ 기사가 수정되었습니다.</div>
   <?php endif; ?>
 
   <!-- HEAD 코드 관리 -->
@@ -169,13 +246,77 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
           <?= htmlspecialchars($a['source'] ?? '') ?> · <?= htmlspecialchars(substr($a['pub_date'] ?? '', 0, 16)) ?>
         </div>
       </div>
-      <a href="?delete=<?= urlencode($a['article_id']) ?>&cat=<?= urlencode($cat_file) ?>"
-         onclick="return confirm('정말 삭제하시겠습니까?')">
-        <button class="del-btn">삭제</button>
-      </a>
+      <div class="btn-group">
+        <button class="edit-btn" onclick="openEdit(<?= htmlspecialchars(json_encode([
+          'id'    => $a['article_id'] ?? '',
+          'cat'   => $cat_file,
+          'label' => $cat_label,
+          'title' => $a['title'] ?? '',
+          'summary' => $a['summary'] ?? '',
+          'cur_cat' => $cur_cat,
+        ]), ENT_QUOTES) ?>)">수정</button>
+        <a href="?delete=<?= urlencode($a['article_id']) ?>&cat=<?= urlencode($cat_file) ?>"
+           onclick="return confirm('정말 삭제하시겠습니까?')">
+          <button class="del-btn">삭제</button>
+        </a>
+      </div>
     </div>
   <?php endforeach; ?>
 </div>
+
+<!-- 수정 모달 -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <h3>✏️ 기사 수정</h3>
+    <form method="POST" id="edit-form">
+      <input type="hidden" name="edit_id" id="ef-id">
+      <input type="hidden" name="old_cat" id="ef-old-cat">
+      <input type="hidden" name="cur_cat" id="ef-cur-cat">
+      <label>제목</label>
+      <input type="text" name="new_title" id="ef-title" maxlength="200">
+      <label>요약 내용</label>
+      <textarea name="new_summary" id="ef-summary" rows="6"></textarea>
+      <label>카테고리</label>
+      <select name="new_cat" id="ef-cat">
+        <?php foreach ($all_cats as $c): ?>
+          <option value="<?= htmlspecialchars(str_replace('/', '_', $c)) ?>"><?= htmlspecialchars($c) ?></option>
+        <?php endforeach; ?>
+      </select>
+      <input type="hidden" name="new_cat_label" id="ef-cat-label">
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeEdit()">취소</button>
+        <button type="submit" class="btn-save">저장</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const ALL_CATS = <?= json_encode(array_combine(
+  array_map(fn($c) => str_replace('/', '_', $c), $all_cats),
+  $all_cats
+)) ?>;
+
+function openEdit(data) {
+  document.getElementById('ef-id').value      = data.id;
+  document.getElementById('ef-old-cat').value = data.cat;
+  document.getElementById('ef-cur-cat').value = data.cur_cat;
+  document.getElementById('ef-title').value   = data.title;
+  document.getElementById('ef-summary').value = data.summary;
+  document.getElementById('ef-cat').value     = data.cat;
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeEdit() {
+  document.getElementById('edit-modal').classList.remove('open');
+}
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeEdit();
+});
+document.getElementById('edit-form').addEventListener('submit', function() {
+  const sel = document.getElementById('ef-cat');
+  document.getElementById('ef-cat-label').value = ALL_CATS[sel.value] || sel.value;
+});
+</script>
 <?php endif; ?>
 
 </body>
