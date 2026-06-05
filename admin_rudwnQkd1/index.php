@@ -14,44 +14,8 @@ function send_otp_email(string $otp): bool {
     $to      = ADMIN_EMAIL;
     $subject = '[newscommu] 관리자 인증 코드: ' . $otp;
     $message = "관리자 인증 코드입니다.\n\n코드: {$otp}\n\n5분 내에 입력하세요.\n\n본인이 아니라면 즉시 비밀번호를 변경하세요.";
-
-    // PHP mail() 대신 소켓 SMTP 직접 사용 (SSL)
-    $ctx = stream_context_create(['ssl' => ['verify_peer' => false, 'verify_peer_name' => false]]);
-    $sock = @stream_socket_client('ssl://' . SMTP_HOST . ':' . SMTP_PORT, $errno, $errstr, 10, STREAM_CLIENT_CONNECT, $ctx);
-    if (!$sock) return false;
-
-    $recv = fgets($sock, 512);
-    $send = function($cmd) use ($sock) {
-        fwrite($sock, $cmd . "\r\n");
-        return fgets($sock, 512);
-    };
-
-    $send('EHLO newscommu.com');
-    fgets($sock, 512); fgets($sock, 512); fgets($sock, 512); fgets($sock, 512); fgets($sock, 512);
-    $send('AUTH LOGIN');
-    fgets($sock, 512);
-    $send(base64_encode(SMTP_USER));
-    fgets($sock, 512);
-    $send(base64_encode(SMTP_PASS));
-    $r = fgets($sock, 512);
-    if (strpos($r, '235') === false) { fclose($sock); return false; }
-
-    $send('MAIL FROM:<' . SMTP_USER . '>');
-    fgets($sock, 512);
-    $send('RCPT TO:<' . $to . '>');
-    fgets($sock, 512);
-    $send('DATA');
-    fgets($sock, 512);
-
-    $headers  = "From: newscommu <" . SMTP_USER . ">\r\n";
-    $headers .= "To: <{$to}>\r\n";
-    $headers .= "Subject: =?UTF-8?B?" . base64_encode($subject) . "?=\r\n";
-    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
-    fwrite($sock, $headers . "\r\n" . $message . "\r\n.\r\n");
-    fgets($sock, 512);
-    $send('QUIT');
-    fclose($sock);
-    return true;
+    $headers = "From: newscommu@newscommu.com\r\nContent-Type: text/plain; charset=UTF-8";
+    return mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $message, $headers);
 }
 
 // ── 1단계: 비밀번호 확인 ──
