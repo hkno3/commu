@@ -36,16 +36,18 @@ MAX_PUBLISHED = 500
 
 REWRITE_PROMPT = (
     "다음 뉴스 기사를 커뮤니티 토론 게시글 형식으로 작성해주세요.\n\n"
+    "반드시 아래 형식 그대로 출력하세요 (마크다운 ** 기호 절대 사용 금지):\n\n"
     "제목: (핵심을 담은 자연스러운 한국어 제목. 단어 중간에 자르지 말 것. 30자 이내)\n"
     "내용: 아래 구조로 작성\n"
     "  1. 기사 핵심 내용을 2~3문장으로 요약 (사실 정확히 유지)\n"
     "  2. 줄바꿈 후 이 사안의 핵심 쟁점이나 논란 포인트 1~2문장\n"
-    "  3. 줄바꿈 후 독자에게 의견을 묻는 질문 1개 (예: '여러분은 어떻게 생각하시나요?')\n"
+    "  3. 줄바꿈 후 독자에게 의견을 묻는 질문 1개\n"
     "  전체 300자 내외\n\n"
     "주의사항:\n"
+    "- ** 같은 마크다운 기호 절대 사용하지 말 것\n"
     "- 제목은 완전한 문장이나 구로 끝낼 것\n"
     "- 단어를 중간에 자르거나 생략하지 말 것\n"
-    "- '제목:'과 '내용:' 형식을 반드시 지킬 것\n"
+    "- '제목:'과 '내용:' 앞에 ** 붙이지 말 것. 정확히 '제목:'과 '내용:'으로만 시작할 것\n"
     "- 내용은 자연스러운 구어체로 작성할 것"
 )
 
@@ -122,7 +124,9 @@ def make_article_id(url: str) -> str:
 
 
 def strip_html(text: str) -> str:
-    return re.sub(r"<[^>]+>", "", text).strip()
+    text = re.sub(r"<[^>]+>", "", text)
+    text = text.replace("&quot;", '"').replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&apos;", "'").replace("&#39;", "'")
+    return text.strip()
 
 
 def get_current_category() -> str:
@@ -212,6 +216,9 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
         resp = requests.post(ANTHROPIC_API_URL, headers=headers, json=payload, timeout=30)
         resp.raise_for_status()
         result = resp.json()["content"][0]["text"].strip()
+
+        # ** 마크다운 제거
+        result = result.replace("**", "")
 
         # 제목: / 내용: 파싱
         new_title = original_title
