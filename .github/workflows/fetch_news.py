@@ -17,11 +17,11 @@ from datetime import datetime, timezone
 
 NAVER_CLIENT_ID = os.environ.get("NAVER_CLIENT_ID", "")
 NAVER_CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "")
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 NAVER_API_URL = "https://openapi.naver.com/v1/search/news.json"
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama-3.1-8b-instant"
+ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
+ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 
 CATEGORIES = [
     "정치", "경제", "사회", "생활/문화", "세계", "IT/과학",
@@ -194,37 +194,45 @@ def fetch_naver_news(query: str, display: int = 20) -> list:
         return []
 
 
-def rewrite_with_groq(text: str, original_title: str) -> dict:
+def rewrite_with_claude(text: str, original_title: str) -> dict:
     """제목과 내용을 함께 재작성. {'title': ..., 'summary': ...} 반환"""
-    if not GROQ_API_KEY:
+    if not ANTHROPIC_API_KEY:
         return {"title": original_title, "summary": text}
     headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
     }
     payload = {
-        "model": GROQ_MODEL,
+        "model": ANTHROPIC_MODEL,
+        "max_tokens": 500,
         "messages": [{"role": "user", "content": f"{REWRITE_PROMPT}\n\n{text}"}],
-        "max_tokens": 400,
-        "temperature": 0.7,
     }
     try:
-        resp = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=30)
+        resp = requests.post(ANTHROPIC_API_URL, headers=headers, json=payload, timeout=30)
         resp.raise_for_status()
-        result = resp.json()["choices"][0]["message"]["content"].strip()
+        result = resp.json()["content"][0]["text"].strip()
 
         # 제목: / 내용: 파싱
         new_title = original_title
-        summary = result
+        summary_lines = []
+        in_content = False
         for line in result.split("\n"):
-            if line.startswith("제목:"):
-                new_title = line.replace("제목:", "").strip()
-            elif line.startswith("내용:"):
-                summary = line.replace("내용:", "").strip()
+            stripped = line.strip()
+            if stripped.startswith("제목:"):
+                new_title = stripped.replace("제목:", "").strip()
+            elif stripped.startswith("내용:"):
+                content_part = stripped.replace("내용:", "").strip()
+                if content_part:
+                    summary_lines.append(content_part)
+                in_content = True
+            elif in_content and stripped:
+                summary_lines.append(stripped)
 
+        summary = "\n".join(summary_lines) if summary_lines else result
         return {"title": new_title, "summary": summary}
     except Exception as exc:
-        print(f"[Groq] 오류: {exc}")
+        print(f"[Claude] 오류: {exc}")
         return {"title": original_title, "summary": text}
 
 
@@ -281,7 +289,7 @@ def main():
         source = item.get("link", "").split("/")[2] if item.get("link") else ""
 
         print(f"[+] 새 기사: {title[:50]}")
-        rewritten = rewrite_with_groq(f"{title}\n{description}", title)
+        rewritten = rewrite_with_claude(f"{title}\n{description}", title)
 
         new_article = {
             "article_id": article_id,
