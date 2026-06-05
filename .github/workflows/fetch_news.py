@@ -158,8 +158,8 @@ def process_category(category: str) -> list:
         articles.append(article)
         print(f"    + {title[:40]}...")
 
-        # Respect Groq rate limits
-        time.sleep(0.5)
+        # Groq 무료 플랜 rate limit 대응: 요청 간 2초 대기
+        time.sleep(2)
 
     return articles
 
@@ -186,8 +186,8 @@ def main():
         print(f"    Saved {len(articles)} articles to {filepath}")
         all_articles.extend(articles)
 
-        # Be polite to Naver API
-        time.sleep(1)
+        # 카테고리 간 3초 대기
+        time.sleep(3)
 
     # Also write a combined latest.json (all categories, sorted by pubDate)
     all_articles.sort(key=lambda x: x.get("pubDate", ""), reverse=True)
