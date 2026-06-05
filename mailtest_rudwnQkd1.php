@@ -6,6 +6,7 @@ $result = mail(
     implode("\r\n", [
         'From: admin@newscommu.com',
         'Content-Type: text/plain; charset=UTF-8',
-    ])
+    ]),
+    '-f admin@newscommu.com'
 );
 echo $result ? '✅ mail() 호출 성공 (메일 확인하세요)' : '❌ mail() 호출 실패';
