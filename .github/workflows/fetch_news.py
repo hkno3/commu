@@ -376,6 +376,53 @@ def update_sitemap(all_articles: list) -> None:
     print(f"[sitemap] {len(seen)}개 기사 URL 업데이트")
 
 
+def update_rss(all_articles: list) -> None:
+    """최신 기사 50개로 rss.xml 생성"""
+    def esc(s):
+        return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+        '  <channel>',
+        f'    <title>{esc("newscommu.com - 실시간 뉴스 커뮤니티")}</title>',
+        f'    <link>{SITE_URL}</link>',
+        f'    <description>{esc("한국 주요 뉴스를 한눈에 — 실시간 뉴스 커뮤니티")}</description>',
+        '    <language>ko</language>',
+        f'    <atom:link href="{SITE_URL}/rss.xml" rel="self" type="application/rss+xml"/>',
+    ]
+
+    seen = set()
+    for a in all_articles[:50]:
+        aid = a.get("article_id", "")
+        if not aid or aid in seen:
+            continue
+        seen.add(aid)
+        title = esc(a.get("title", ""))
+        slug = a.get("slug") or ""
+        is_hex = bool(re.match(r'^[0-9a-f]{8,}$', slug))
+        link = f"{SITE_URL}/article.php?slug={slug}" if slug and not is_hex else f"{SITE_URL}/article.php?id={aid}"
+        desc = esc(a.get("summary", ""))
+        pub_date = a.get("pubDate") or a.get("pub_date") or ""
+        cat_label = esc(a.get("category_label") or a.get("category", ""))
+        lines.append(f"""    <item>
+      <title>{title}</title>
+      <link>{link}</link>
+      <description>{desc}</description>
+      <pubDate>{pub_date}</pubDate>
+      <guid isPermaLink="false">{aid}</guid>
+      <category>{cat_label}</category>
+    </item>""")
+
+    lines.append('  </channel>')
+    lines.append('</rss>')
+
+    rss_path = os.path.join(os.path.dirname(DATA_DIR) if DATA_DIR != "data" else ".", "rss.xml")
+    with open(rss_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    print(f"[rss] {len(seen)}개 기사 RSS 업데이트")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -511,6 +558,9 @@ def main():
 
     # 8. sitemap.xml 갱신
     update_sitemap(all_articles)
+
+    # 9. rss.xml 갱신
+    update_rss(all_articles)
 
     print(f"\n[완료] '{category}' → {new_article['title'][:50]}")
 
