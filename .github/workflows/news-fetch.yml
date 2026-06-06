@@ -88,6 +88,7 @@ jobs:
             **/.git*
             **/.git*/**
             **/node_modules/**
+            **/__pycache__/**
             .github/workflows/fetch_news.py
             README.md
             assets/images/favicon.png
