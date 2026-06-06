@@ -60,7 +60,7 @@ $initial_cat = $CAT_SLUG_MAP[$cat_param] ?? ($cat_param ?: 'all');
 
 <header>
   <div class="header-inner">
-    <a class="logo" href="/"><img src="/assets/images/favicon.png" alt="로고" style="width:28px;height:28px;vertical-align:middle;margin-right:6px;border-radius:6px;"> <?= SITE_NAME ?></a>
+    <h1 style="margin:0; font-size:20px; font-weight:700; display:inline;"><a class="logo" href="/"><img src="/assets/images/favicon.png" alt="로고" style="width:28px;height:28px;vertical-align:middle;margin-right:6px;border-radius:6px;"> <?= SITE_NAME ?></a></h1>
   </div>
 </header>
 
@@ -93,7 +93,7 @@ $initial_cat = $CAT_SLUG_MAP[$cat_param] ?? ($cat_param ?: 'all');
           </div>
           <ul class="rss-list">
             <?php foreach ($rss_body as $item): ?>
-            <li><a href="<?= htmlspecialchars($item['link']) ?>" target="_blank" rel="noopener">
+            <li><a href="<?= htmlspecialchars($item['link']) ?>" title="<?= htmlspecialchars($item['title']) ?>" target="_blank" rel="noopener">
               <?= htmlspecialchars($item['title']) ?>
             </a></li>
             <?php endforeach; ?>
@@ -107,7 +107,7 @@ $initial_cat = $CAT_SLUG_MAP[$cat_param] ?? ($cat_param ?: 'all');
           </div>
           <ul class="rss-list">
             <?php foreach ($rss_biz as $item): ?>
-            <li><a href="<?= htmlspecialchars($item['link']) ?>" target="_blank" rel="noopener">
+            <li><a href="<?= htmlspecialchars($item['link']) ?>" title="<?= htmlspecialchars($item['title']) ?>" target="_blank" rel="noopener">
               <?= htmlspecialchars($item['title']) ?>
             </a></li>
             <?php endforeach; ?>
