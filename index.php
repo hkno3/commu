@@ -1,5 +1,33 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/includes/rss_helper.php';
+
+$rss_body = fetch_rss('https://bodyandwell.com/feed/', 'body');
+$rss_biz  = fetch_rss('https://bizachieve.com/feed/', 'biz');
+
+// 인기 기사 (DB 댓글 수 기준 Top 5)
+$popular = [];
+try {
+    require_once __DIR__ . '/db/init.php';
+    $pdo = db_connect();
+    $stmt = $pdo->query(
+        "SELECT article_id, COUNT(*) AS cnt FROM comments
+         GROUP BY article_id ORDER BY cnt DESC LIMIT 5"
+    );
+    $top_ids = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if ($top_ids) {
+        $latest_path = DATA_DIR . '/latest.json';
+        $all = file_exists($latest_path) ? (json_decode(file_get_contents($latest_path), true) ?: []) : [];
+        $id_map = array_column($all, null, 'article_id');
+        foreach ($top_ids as $row) {
+            $a = $id_map[$row['article_id']] ?? null;
+            if ($a) {
+                $a['comment_count'] = (int)$row['cnt'];
+                $popular[] = $a;
+            }
+        }
+    }
+} catch (Exception $e) {}
 ?>
 <!DOCTYPE html>
 <html lang="ko">
@@ -14,8 +42,6 @@ require_once __DIR__ . '/config.php';
   <link rel="apple-touch-icon" href="/assets/images/favicon.png">
   <link rel="stylesheet" href="/assets/css/style.css">
   <?php require_once __DIR__ . '/includes/head_codes.php'; ?>
-  <!-- AdSense -->
-  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<?= ADSENSE_PUBLISHER_ID ?>" crossorigin="anonymous"></script> -->
 </head>
 <body>
 
@@ -30,10 +56,83 @@ require_once __DIR__ . '/config.php';
 </nav>
 
 <div class="main-wrap">
-  <div class="article-list" id="article-list">
-    <div class="loading">기사 불러오는 중...</div>
+  <div class="main-index-layout">
+
+    <!-- 왼쪽: 기사 목록 -->
+    <div class="index-article-col">
+      <div class="article-list" id="article-list">
+        <div class="loading">기사 불러오는 중...</div>
+      </div>
+      <div id="scroll-sentinel" style="height:20px;"></div>
+    </div>
+
+    <!-- 오른쪽: 사이드바 -->
+    <aside class="index-sidebar">
+
+      <!-- RSS 피드 -->
+      <?php if ($rss_body || $rss_biz): ?>
+      <div class="sidebar-box">
+        <div class="sidebar-box-title">🔗 추천 사이트</div>
+        <?php if ($rss_body): ?>
+        <div class="rss-section">
+          <div class="rss-site-label">
+            <a href="https://bodyandwell.com" target="_blank" rel="noopener">💪 bodyandwell.com</a>
+          </div>
+          <ul class="rss-list">
+            <?php foreach ($rss_body as $item): ?>
+            <li><a href="<?= htmlspecialchars($item['link']) ?>" target="_blank" rel="noopener">
+              <?= htmlspecialchars($item['title']) ?>
+            </a></li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+        <?php endif; ?>
+        <?php if ($rss_biz): ?>
+        <div class="rss-section" style="margin-top:12px;">
+          <div class="rss-site-label">
+            <a href="https://bizachieve.com" target="_blank" rel="noopener">💼 bizachieve.com</a>
+          </div>
+          <ul class="rss-list">
+            <?php foreach ($rss_biz as $item): ?>
+            <li><a href="<?= htmlspecialchars($item['link']) ?>" target="_blank" rel="noopener">
+              <?= htmlspecialchars($item['title']) ?>
+            </a></li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+        <?php endif; ?>
+      </div>
+      <?php endif; ?>
+
+      <!-- 인기 기사 -->
+      <?php if ($popular): ?>
+      <div class="sidebar-box">
+        <div class="sidebar-box-title">🔥 인기 기사</div>
+        <ul class="popular-list">
+          <?php foreach ($popular as $i => $a): ?>
+          <li>
+            <a href="/article.php?id=<?= urlencode($a['article_id']) ?>">
+              <span class="popular-num"><?= $i + 1 ?></span>
+              <?= htmlspecialchars($a['title'] ?? '') ?>
+            </a>
+            <span class="popular-cnt">💬 <?= $a['comment_count'] ?></span>
+          </li>
+          <?php endforeach; ?>
+        </ul>
+      </div>
+      <?php endif; ?>
+
+      <!-- 광고 자리 -->
+      <div class="sidebar-box sidebar-ad">
+        <div class="sidebar-box-title">광고</div>
+        <div style="min-height:250px; display:flex; align-items:center; justify-content:center; color:#bbb; font-size:13px;">
+          <!-- AdSense 코드 여기에 -->
+          광고 영역
+        </div>
+      </div>
+
+    </aside>
   </div>
-  <div id="scroll-sentinel" style="height:20px;"></div>
 </div>
 
 <script src="/assets/js/main.js"></script>
