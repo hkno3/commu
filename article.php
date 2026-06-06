@@ -215,6 +215,14 @@ $og_url = ($article_slug && !$is_hex_slug)
           <?php endif; ?>
         </div>
 
+        <?php if (!empty($article['image_url'])): ?>
+        <div class="article-thumb">
+          <img src="<?= htmlspecialchars($article['image_url'], ENT_QUOTES, 'UTF-8') ?>"
+               alt="<?= $title ?>"
+               style="width:100%; border-radius:10px; margin-bottom:20px; max-height:400px; object-fit:cover;">
+        </div>
+        <?php endif; ?>
+
         <div class="article-body">
           <?= $content_html ?>
         </div>
