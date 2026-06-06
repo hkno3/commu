@@ -444,7 +444,8 @@ def main():
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
         from datetime import timedelta
-        now_kst = datetime.now(timezone.utc) + timedelta(hours=9)
+        KST = timezone(timedelta(hours=9))
+        now_kst = datetime.now(KST)
         publish_time = now_kst.isoformat()
 
         new_article = {
