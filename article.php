@@ -287,11 +287,12 @@ $og_url = ($article_slug && !$is_hex_slug)
         </div>
 
         <script>
-          Kakao.init('35a152dc3d0307c3f0422c801712153d');
+          if (!Kakao.isInitialized()) {
+            Kakao.init('35a152dc3d0307c3f0422c801712153d');
+          }
           function shareKakao() {
             Kakao.Share.sendScrap({
-              requestUrl: <?= json_encode($og_url) ?>,
-              templateId: undefined
+              requestUrl: <?= json_encode($og_url) ?>
             });
           }
         </script>
