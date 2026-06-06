@@ -56,24 +56,41 @@ _CAT_LIST = "정치, 경제, 사회, 생활/문화, 세계, IT/과학, 부동산
 REWRITE_PROMPT = (
     "다음 뉴스 기사를 커뮤니티 에디터의 시각으로 재작성해주세요.\n\n"
     "반드시 아래 형식 그대로 출력하세요 (마크다운 ** 기호 절대 사용 금지):\n\n"
-    "제목: (핵심을 담은 자연스러운 한국어 제목. 30자 이내. 단어 중간에 자르지 말 것)\n"
-    f"카테고리: (아래 목록 중 기사 내용에 가장 맞는 것 1개만 정확히 그대로 쓸 것)\n"
+    "제목: (30자 이내. 아래 제목 규칙 적용)\n"
+    f"카테고리: (아래 목록 중 1개만 정확히)\n"
     f"  [{_CAT_LIST}]\n"
-    "슬러그: (기사 제목을 영어로 번역해 URL용 슬러그로. 소문자, 하이픈으로 연결, 3~6단어. 예: smilegate-crossfire-global-launch)\n"
-    "요약: (기사 핵심을 2문장으로 요약. 구어체. 카드 미리보기용)\n"
-    "내용:\n"
-    "<h2>첫 번째 소제목 (기사의 핵심 사실)</h2>\n"
-    "<p>핵심 내용을 친근한 구어체로 2~3문장. 사실을 정확히 전달하되 친구한테 얘기하듯이.</p>\n"
-    "<h2>두 번째 소제목 (에디터 시각 또는 논란 포인트)</h2>\n"
-    "<p>이 사안에서 흥미롭거나 의외인 점, 에디터 개인 생각 1~2문장 포함. 예: '솔직히 말하면...', '개인적으로는...' 식으로.</p>\n"
-    "<h3>여러분 생각은?</h3>\n"
-    "<p>독자에게 의견을 묻는 질문 1개. 편하고 자연스럽게.</p>\n\n"
-    "주의사항:\n"
-    "- ** 같은 마크다운 기호 절대 사용하지 말 것\n"
-    "- 딱딱한 뉴스 문체(~했습니다, ~입니다) 대신 구어체(~했대요, ~라고 하네요, ~인 것 같아요) 사용\n"
-    "- h2/h3/p 태그 외 다른 HTML 태그 사용 금지\n"
-    "- 내용 전체 600자 내외\n"
-    "- '제목:', '카테고리:', '슬러그:', '요약:', '내용:' 앞에 ** 붙이지 말 것"
+    "슬러그: (영어 URL 슬러그. 소문자+하이픈, 3~6단어. 예: korea-ai-startup-investment)\n"
+    "요약: (2문장 구어체 요약. 카드 미리보기용)\n"
+    "내용: (아래 본문 규칙 적용)\n\n"
+    "=== 제목 규칙 ===\n"
+    "- 핵심 키워드를 앞 15자 이내에 배치\n"
+    "- 숫자를 반드시 1개 이상 포함 (개수/연도/금액/기간)\n"
+    "- 후킹 패턴 중 하나 선택 (매번 다르게):\n"
+    "  예) '~하면 안 되는 이유 N가지' / '아무도 몰랐던 ~' / '~ 전에 꼭 확인할 것'\n"
+    "  예) '~ 했더니 생긴 일' / '공식 발표로 본 ~ 총정리' / '~ N가지 핵심 정리'\n"
+    "- 특수문자/광고성 단어(최고, 무료, 강추) 금지\n\n"
+    "=== 본문 규칙 ===\n"
+    "글마다 구조와 톤이 달라야 함. 아래에서 선택:\n\n"
+    "[첫 문장 톤 - 매번 랜덤 선택]\n"
+    "A. 직설형: '결론부터 말하면 ~'\n"
+    "B. 공감형: '막상 ~하려면 막막한 게 사실이다'\n"
+    "C. 의문형: '정말 ~일까?'\n"
+    "D. 결론선제형: '이 뉴스의 핵심은 단 하나다'\n\n"
+    "[본문 구조 - 매번 다르게]\n"
+    "- h2 개수: 2~4개 사이에서 변형\n"
+    "- 아래 요소 중 2~3개 랜덤 포함:\n"
+    "  1) 팁 박스: <p style=\"background:#fff8e1; border-left:4px solid #f39c12; padding:12px 16px; margin:16px 0;\">💡 <strong>팁:</strong> 내용</p>\n"
+    "  2) 주의 박스: <p style=\"background:#fff3f3; border-left:4px solid #e74c3c; padding:12px 16px; margin:16px 0;\">⚠️ <strong>주의:</strong> 내용</p>\n"
+    "  3) 안내 박스: <p style=\"background:#f0fff0; border-left:4px solid #27ae60; padding:12px 16px; margin:16px 0;\">✅ <strong>안내:</strong> 내용</p>\n"
+    "  4) FAQ (details 태그):\n"
+    "     <h3>자주 묻는 질문</h3>\n"
+    "     <details style=\"background:#e3f2fd; border:1px solid #90caf9; border-radius:6px; padding:12px 16px; margin:8px 0;\"><summary style=\"font-weight:bold; cursor:pointer;\">질문</summary><p style=\"margin-top:10px;\">답변</p></details>\n"
+    "  5) 에디터 의견: '솔직히 말하면...' / '개인적으로는...' 식으로 1~2문장\n"
+    "  6) 독자 질문: 마지막에 독자 의견 묻는 질문 1개\n\n"
+    "사용 가능 태그: h2, h3, p, strong, details, summary (인라인 스타일 허용)\n"
+    "금지: 마크다운 **, ## 등 / 딱딱한 문체(~했습니다) → 구어체(~했대요, ~인 것 같아요)\n"
+    "본문 전체 800~1200자\n"
+    "'제목:', '카테고리:', '슬러그:', '요약:', '내용:' 앞에 ** 붙이지 말 것"
 )
 
 # 중복 판단: 핵심 명사가 이 비율 이상 겹치면 중복
@@ -254,7 +271,7 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
     }
     payload = {
         "model": ANTHROPIC_MODEL,
-        "max_tokens": 1200,
+        "max_tokens": 2000,
         "messages": [{"role": "user", "content": f"{REWRITE_PROMPT}\n\n{text}"}],
     }
     try:
@@ -374,6 +391,16 @@ def main():
 
     # 2. 발행 이력 로드
     published = load_published()
+
+    # latest.json에 있는 article_id도 published에 추가 (published.json 삭제돼도 중복 방지)
+    latest_path = os.path.join(DATA_DIR, "latest.json")
+    if os.path.exists(latest_path):
+        try:
+            latest = json.load(open(latest_path, encoding="utf-8"))
+            for a in latest:
+                published["ids"].add(a.get("article_id", ""))
+        except Exception:
+            pass
     print(f"[*] 발행 이력: {len(published['ids'])}개")
 
     # 3. 네이버 기사 가져오기
