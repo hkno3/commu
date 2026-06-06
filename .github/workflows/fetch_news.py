@@ -270,7 +270,7 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
     }
     payload = {
         "model": ANTHROPIC_MODEL,
-        "max_tokens": 2000,
+        "max_tokens": 4000,
         "messages": [{"role": "user", "content": f"{REWRITE_PROMPT}\n\n{text}"}],
     }
     try:
