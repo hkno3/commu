@@ -91,7 +91,7 @@ REWRITE_PROMPT = (
 )
 
 # 중복 판단: 핵심 명사가 이 비율 이상 겹치면 중복
-SIMILARITY_THRESHOLD = 0.7
+SIMILARITY_THRESHOLD = 0.5
 
 # ---------------------------------------------------------------------------
 # 중복 판단: 핵심 명사 추출 + 유사도 계산
@@ -389,6 +389,13 @@ def main():
             latest = json.load(open(latest_path, encoding="utf-8"))
             for a in latest:
                 published["ids"].add(a.get("article_id", ""))
+                # 원본 제목도 중복 이력에 추가
+                orig_title = a.get("original_title") or a.get("title", "")
+                if orig_title:
+                    published["titles"].append({
+                        "date": (a.get("pubDate") or a.get("pub_date") or "")[:10],
+                        "keywords": list(extract_keywords(orig_title)),
+                    })
         except Exception:
             pass
     print(f"[*] 발행 이력: {len(published['ids'])}개")
