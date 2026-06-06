@@ -93,7 +93,18 @@ REWRITE_PROMPT = (
     "     <details style=\"background:#e3f2fd; border:1px solid #90caf9; border-radius:6px; padding:12px 16px; margin:8px 0;\"><summary style=\"font-weight:bold; cursor:pointer;\">질문3</summary><p style=\"margin-top:10px;\">답변3</p></details>\n"
     "  5) 에디터 의견: '솔직히 말하면...' / '개인적으로는...' 식으로 1~2문장\n"
     "  6) 독자 질문: 마지막에 독자 의견 묻는 질문 1개\n\n"
-    "사용 가능 태그: h2, h3, p, strong, details, summary (인라인 스타일 허용)\n"
+    "- 비교/정리가 필요한 내용은 표로 작성 (예: 항목 비교, 연도별 변화, 장단점):\n"
+    "  <table style=\"width:100%; border-collapse:collapse; margin:16px 0;\">\n"
+    "  <thead><tr style=\"background:#f0f4ff;\"><th style=\"border:1px solid #ddd; padding:8px 12px;\">항목</th><th style=\"border:1px solid #ddd; padding:8px 12px;\">내용</th></tr></thead>\n"
+    "  <tbody><tr><td style=\"border:1px solid #ddd; padding:8px 12px;\">값</td><td style=\"border:1px solid #ddd; padding:8px 12px;\">값</td></tr></tbody>\n"
+    "  </table>\n\n"
+    "[1인칭 에디터 말투 강화]\n"
+    "- 단순 정보 나열 금지. 반드시 에디터 본인이 직접 겪거나 느낀 것처럼 작성\n"
+    "- 예) '솔직히 처음 이 뉴스 봤을 때 좀 놀랐어요' / '주변에서도 이런 경우 많이 봤는데'\n"
+    "- 예) '제가 직접 확인해봤더니~' / '이게 왜 중요하냐면~' / '실제로 해보면 느끼는 게'\n"
+    "- 독자가 '아 이 에디터가 진짜 관심 있구나' 느낄 수 있게\n"
+    "- 실용적인 팁, 독자가 바로 써먹을 수 있는 정보 반드시 포함\n\n"
+    "사용 가능 태그: h2, h3, p, strong, details, summary, table, thead, tbody, tr, th, td (인라인 스타일 허용)\n"
     "금지: 마크다운 **, ## 등 / 딱딱한 문체(~했습니다) → 구어체(~했대요, ~인 것 같아요)\n"
     "본문 전체 1200~1800자 (반드시 1200자 이상 작성)\n"
     "'제목:', '카테고리:', '슬러그:', '요약:', '내용:' 앞에 ** 붙이지 말 것"
@@ -309,7 +320,7 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
 
         # HTML 본문 조합 (허용 태그만 유지)
         # strong, details, summary, style 속성 포함 허용
-        allowed = re.compile(r'<(?!/?(h2|h3|p|br|strong|details|summary)(\s|>))[^>]+>', re.IGNORECASE)
+        allowed = re.compile(r'<(?!/?(h2|h3|p|br|strong|details|summary|table|thead|tbody|tr|th|td)(\s|>))[^>]+>', re.IGNORECASE)
         raw_content = "\n".join(content_lines).strip()
         content_html = allowed.sub("", raw_content) if raw_content else f"<p>{summary_text or text}</p>"
 
