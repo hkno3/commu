@@ -157,6 +157,36 @@ $og_url = ($article_slug && !$is_hex_slug)
   <meta property="og:site_name"   content="<?= htmlspecialchars(SITE_NAME) ?>">
   <link rel="canonical" href="<?= htmlspecialchars($og_url) ?>">
 
+  <!-- Author / Publisher -->
+  <meta name="author" content="pyo1211">
+  <link rel="author" href="https://newscommu.com">
+  <link rel="publisher" href="https://newscommu.com">
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    "headline": <?= json_encode($article['title'] ?? '') ?>,
+    "description": <?= json_encode(mb_substr(strip_tags($article['summary'] ?? ''), 0, 160)) ?>,
+    "url": <?= json_encode($og_url) ?>,
+    "datePublished": <?= json_encode(($article['pubDate'] ?? $article['pub_date'] ?? '')) ?>,
+    "author": {
+      "@type": "Person",
+      "name": "pyo1211"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "newscommu.com",
+      "url": "https://newscommu.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://newscommu.com/assets/images/favicon.png"
+      }
+    }
+  }
+  </script>
+
   <!-- Twitter Card -->
   <meta name="twitter:card"  content="summary">
   <meta name="twitter:title" content="<?= $title ?>">
