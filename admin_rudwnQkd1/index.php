@@ -153,6 +153,25 @@ if ($is_auth) {
     }
     $articles = array_slice($articles, 0, 50);
 }
+
+// 조회수 데이터 로드
+$view_stats = [];
+if ($is_auth && !empty($articles)) {
+    try {
+        require_once __DIR__ . '/../db/init.php';
+        $pdo = db_connect();
+        $ids = array_map(fn($a) => $a['article_id'] ?? '', $articles);
+        $ids = array_filter($ids);
+        if ($ids) {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $stmt = $pdo->prepare("SELECT article_id, COUNT(*) AS total, SUM(DATE(viewed_at)=CURDATE()) AS today FROM page_views WHERE article_id IN ($placeholders) GROUP BY article_id");
+            $stmt->execute(array_values($ids));
+            foreach ($stmt->fetchAll() as $row) {
+                $view_stats[$row['article_id']] = ['today' => (int)$row['today'], 'total' => (int)$row['total']];
+            }
+        }
+    } catch (Exception $e) {}
+}
 ?>
 <!DOCTYPE html>
 <html lang="ko">
@@ -271,6 +290,9 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
         <div class="article-summary"><?= htmlspecialchars($a['summary'] ?? '') ?></div>
         <div class="article-meta">
           <?= htmlspecialchars($a['source'] ?? '') ?> · <?= htmlspecialchars(substr($a['pub_date'] ?? '', 0, 16)) ?>
+          <?php $vs = $view_stats[$a['article_id'] ?? ''] ?? null; if ($vs): ?>
+            &nbsp;·&nbsp; 👁 오늘 <?= $vs['today'] ?> / 전체 <?= $vs['total'] ?>
+          <?php endif; ?>
         </div>
       </div>
       <div class="btn-group">

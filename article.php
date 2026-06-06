@@ -140,6 +140,33 @@ $is_hex_slug  = $article_slug && preg_match('/^[0-9a-f]{8,}$/i', $article_slug);
 $og_url = ($article_slug && !$is_hex_slug)
     ? SITE_URL . '/article.php?slug=' . urlencode($article_slug)
     : SITE_URL . '/article.php?id=' . urlencode($article_id);
+
+// 조회수 카운트 (같은 IP 24시간 내 1회만)
+$view_count_today = 0;
+$view_count_total = 0;
+try {
+    require_once __DIR__ . '/db/init.php';
+    $pdo = db_connect();
+    $ip_hash = hash('sha256', $_SERVER['REMOTE_ADDR'] ?? '');
+    $aid = $article['article_id'] ?? $article_id;
+
+    // 24시간 내 같은 IP 조회 여부 확인
+    $dup = $pdo->prepare("SELECT COUNT(*) FROM page_views WHERE article_id=? AND ip_hash=? AND viewed_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+    $dup->execute([$aid, $ip_hash]);
+    if ($dup->fetchColumn() == 0) {
+        $ins = $pdo->prepare("INSERT INTO page_views (article_id, ip_hash) VALUES (?, ?)");
+        $ins->execute([$aid, $ip_hash]);
+    }
+
+    // 오늘/전체 조회수
+    $st = $pdo->prepare("SELECT COUNT(*) FROM page_views WHERE article_id=? AND DATE(viewed_at)=CURDATE()");
+    $st->execute([$aid]);
+    $view_count_today = (int)$st->fetchColumn();
+
+    $st2 = $pdo->prepare("SELECT COUNT(*) FROM page_views WHERE article_id=?");
+    $st2->execute([$aid]);
+    $view_count_total = (int)$st2->fetchColumn();
+} catch (Exception $e) {}
 ?>
 <!DOCTYPE html>
 <html lang="ko">
@@ -243,6 +270,7 @@ $og_url = ($article_slug && !$is_hex_slug)
             <?php if ($pub_date): ?>
               <span><?= htmlspecialchars($pub_date) ?></span>
             <?php endif; ?>
+            <span style="color:#999; font-size:12px;">👁 오늘 <?= $view_count_today ?> · 전체 <?= $view_count_total ?></span>
           </div>
           <h1><?= $title ?></h1>
         </div>
