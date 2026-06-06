@@ -60,11 +60,10 @@ REWRITE_PROMPT = (
     "다음 뉴스 기사를 커뮤니티 에디터의 시각으로 재작성해주세요.\n\n"
     "반드시 아래 형식 그대로 출력하세요 (마크다운 ** 기호 절대 사용 금지):\n\n"
     "제목: (30자 이내. 아래 제목 규칙 적용)\n"
-    f"카테고리: (아래 목록 중 1개만 정확히)\n"
-    f"  [{_CAT_LIST}]\n"
     "슬러그: (영어 URL 슬러그. 소문자+하이픈, 3~6단어. 예: korea-ai-startup-investment)\n"
     "요약: (2문장 구어체 요약. 카드 미리보기용)\n"
-    "내용: (아래 본문 규칙 적용)\n\n"
+    "내용: (아래 본문 규칙 적용)\n"
+    f"카테고리: (본문 전체를 쓴 뒤 내용에 맞는 카테고리 1개 선택. 목록: [{_CAT_LIST}])\n\n"
     "=== 제목 규칙 ===\n"
     "- 핵심 키워드를 앞 15자 이내에 배치\n"
     "- 숫자를 반드시 1개 이상 포함 (개수/연도/금액/기간)\n"
@@ -282,7 +281,7 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
                 section = None
             elif re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
                 new_category = re.sub(r"^카\s*테\s*고\s*리\s*[:：]\s*", "", stripped).strip()
-                section = None
+                section = None  # 카테고리는 항상 최우선 파싱 (내용: 이후에 나와도)
             elif re.match(r"^슬\s*러\s*그\s*[:：]", stripped):
                 raw_slug = re.sub(r"^슬\s*러\s*그\s*[:：]\s*", "", stripped).strip()
                 # 소문자, 영문/숫자/하이픈만 허용
@@ -297,7 +296,8 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
                 if section == 'summary' and stripped and not summary_text:
                     summary_text = stripped
                 elif section == 'content':
-                    content_lines.append(line)
+                    if not re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
+                        content_lines.append(line)
 
         if not new_title:
             print("[Claude] 제목 파싱 실패, 원본 사용")
