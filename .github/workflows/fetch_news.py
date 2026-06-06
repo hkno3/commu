@@ -17,7 +17,6 @@ from datetime import datetime, timezone
 
 NAVER_CLIENT_ID = os.environ.get("NAVER_CLIENT_ID", "")
 NAVER_CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "")
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 GEMINI_API_KEYS = [
     k for k in [
         os.environ.get("GEMINI_API_KEY_1", ""),
@@ -26,8 +25,6 @@ GEMINI_API_KEYS = [
     ] if k
 ]
 NAVER_API_URL = "https://openapi.naver.com/v1/search/news.json"
-ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 
 CATEGORIES = [
     "정치", "경제", "사회", "생활/문화", "세계", "IT/과학",
@@ -349,29 +346,6 @@ def _parse_rewrite_result(result: str, original_title: str) -> dict:
     return {"title": new_title, "slug": new_slug, "summary": summary_text, "content": content_html, "category": new_category}
 
 
-def rewrite_with_claude(text: str, original_title: str) -> dict:
-    """제목·요약·HTML본문을 재작성. {'title': ..., 'summary': ..., 'content': ...} 반환"""
-    if not ANTHROPIC_API_KEY:
-        return {"title": original_title, "summary": text, "content": f"<p>{text}</p>"}
-    headers = {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": ANTHROPIC_MODEL,
-        "max_tokens": 4000,
-        "messages": [{"role": "user", "content": f"{REWRITE_PROMPT}\n\n{text}"}],
-    }
-    try:
-        resp = requests.post(ANTHROPIC_API_URL, headers=headers, json=payload, timeout=30)
-        resp.raise_for_status()
-        result = resp.json()["content"][0]["text"].strip()
-        print(f"[Claude 응답]\n{result[:300]}")
-        return _parse_rewrite_result(result, original_title)
-    except Exception as exc:
-        print(f"[Claude] 오류: {exc}")
-        return {"title": original_title, "slug": None, "summary": text, "content": f"<p>{text}</p>"}
 
 
 SITE_URL = "https://newscommu.com"
@@ -544,10 +518,10 @@ def main():
         print(f"[+] 새 기사: {title[:50]}")
         rewritten = rewrite_with_gemini(f"{title}\n{description}", title)
         if rewritten is None:
-            print("[*] Gemini 키 모두 소진 → Claude로 대체")
-            rewritten = rewrite_with_claude(f"{title}\n{description}", title)
+            print("[*] Gemini 키 모두 소진, 기사 발행 건너뜀")
+            continue
 
-        # Claude가 분류한 카테고리가 유효하면 사용, 아니면 검색 카테고리 유지
+        # Gemini가 분류한 카테고리가 유효하면 사용, 아니면 검색 카테고리 유지
         claude_cat = rewritten.get("category", "")
         if claude_cat and claude_cat in CATEGORIES:
             final_category = claude_cat
