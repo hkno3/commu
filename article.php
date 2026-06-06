@@ -136,8 +136,9 @@ try {
 }
 
 $article_slug = $article['slug'] ?? '';
-$og_url = $article_slug
-    ? SITE_URL . '/article/' . $article_slug
+$is_hex_slug  = $article_slug && preg_match('/^[0-9a-f]{8,}$/i', $article_slug);
+$og_url = ($article_slug && !$is_hex_slug)
+    ? SITE_URL . '/article.php?slug=' . urlencode($article_slug)
     : SITE_URL . '/article.php?id=' . urlencode($article_id);
 ?>
 <!DOCTYPE html>

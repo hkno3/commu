@@ -180,7 +180,13 @@ function createArticleCard(article) {
     </div>
   `;
   card.onclick = () => {
-    window.location.href = `/article.php?id=${encodeURIComponent(article.article_id)}`;
+    const slug = article.slug;
+    const isHexId = slug && /^[0-9a-f]{8,}$/.test(slug);
+    if (slug && !isHexId) {
+      window.location.href = `/article.php?slug=${encodeURIComponent(slug)}`;
+    } else {
+      window.location.href = `/article.php?id=${encodeURIComponent(article.article_id)}`;
+    }
   };
   return card;
 }
