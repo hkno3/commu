@@ -60,11 +60,10 @@ REWRITE_PROMPT = (
     "다음 뉴스 기사를 커뮤니티 에디터의 시각으로 재작성해주세요.\n\n"
     "반드시 아래 형식 그대로 출력하세요 (마크다운 ** 기호 절대 사용 금지):\n\n"
     "제목: (30자 이내. 아래 제목 규칙 적용)\n"
-    f"카테고리: (아래 목록 중 1개만 정확히)\n"
-    f"  [{_CAT_LIST}]\n"
     "슬러그: (영어 URL 슬러그. 소문자+하이픈, 3~6단어. 예: korea-ai-startup-investment)\n"
     "요약: (2문장 구어체 요약. 카드 미리보기용)\n"
-    "내용: (아래 본문 규칙 적용)\n\n"
+    "내용: (아래 본문 규칙 적용)\n"
+    f"카테고리: (본문 전체를 쓴 뒤 내용에 맞는 카테고리 1개 선택. 목록: [{_CAT_LIST}])\n\n"
     "=== 제목 규칙 ===\n"
     "- 핵심 키워드를 앞 15자 이내에 배치\n"
     "- 숫자를 반드시 1개 이상 포함 (개수/연도/금액/기간)\n"
@@ -228,50 +227,6 @@ def save_category_articles(category: str, articles: list) -> None:
 # Naver & Groq
 # ---------------------------------------------------------------------------
 
-def generate_image_gemini(slug: str, title: str) -> str | None:
-    """Gemini Imagen으로 이미지 생성 후 파일 저장. 실패 시 None 반환."""
-    import base64
-    if not GEMINI_API_KEYS:
-        return None
-
-    prompt = (
-        f"Professional news photo about: {slug.replace('-', ' ') if slug else title[:80]}. "
-        "Realistic, high quality, photojournalism style, no text, no watermark."
-    )
-    os.makedirs("assets/images/articles", exist_ok=True)
-    safe_slug = slug if slug else hashlib.md5(title.encode()).hexdigest()[:12]
-    filename = f"{safe_slug}.jpg"
-    filepath = f"assets/images/articles/{filename}"
-
-    for key in GEMINI_API_KEYS:
-        try:
-            url = (
-                "https://generativelanguage.googleapis.com/v1beta/models/"
-                f"gemini-2.5-flash-preview-05-20:generateContent?key={key}"
-            )
-            payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"responseModalities": ["IMAGE", "TEXT"]},
-            }
-            resp = requests.post(url, json=payload, timeout=40)
-            if resp.status_code == 429:
-                print(f"[Gemini] 할당량 초과, 다음 키 시도")
-                continue
-            resp.raise_for_status()
-            parts = resp.json()["candidates"][0]["content"]["parts"]
-            for part in parts:
-                if "inlineData" in part:
-                    b64 = part["inlineData"]["data"]
-                    with open(filepath, "wb") as f:
-                        f.write(base64.b64decode(b64))
-                    print(f"[Gemini] 이미지 저장: {filepath}")
-                    return f"/assets/images/articles/{filename}"
-        except Exception as e:
-            print(f"[Gemini] 오류: {e}")
-            continue
-
-    print("[Gemini] 모든 키 실패, 이미지 없음")
-    return None
 
 
 def fetch_naver_news(query: str, display: int = 20) -> list:
@@ -326,7 +281,7 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
                 section = None
             elif re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
                 new_category = re.sub(r"^카\s*테\s*고\s*리\s*[:：]\s*", "", stripped).strip()
-                section = None
+                section = None  # 카테고리는 항상 최우선 파싱 (내용: 이후에 나와도)
             elif re.match(r"^슬\s*러\s*그\s*[:：]", stripped):
                 raw_slug = re.sub(r"^슬\s*러\s*그\s*[:：]\s*", "", stripped).strip()
                 # 소문자, 영문/숫자/하이픈만 허용
@@ -341,7 +296,8 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
                 if section == 'summary' and stripped and not summary_text:
                     summary_text = stripped
                 elif section == 'content':
-                    content_lines.append(line)
+                    if not re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
+                        content_lines.append(line)
 
         if not new_title:
             print("[Claude] 제목 파싱 실패, 원본 사용")
@@ -483,9 +439,7 @@ def main():
         else:
             final_category = category
 
-        # Gemini Imagen 이미지 생성
-        img_slug = rewritten.get("slug") or ""
-        image_url = generate_image_gemini(img_slug, title)
+        image_url = None
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
         from datetime import timedelta

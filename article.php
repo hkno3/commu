@@ -120,7 +120,7 @@ $summary     = htmlspecialchars($article['summary'] ?? '', ENT_QUOTES, 'UTF-8');
 // content: HTML with h2/h3/p tags. Fall back to summary if not present.
 $raw_content = $article['content'] ?? '';
 if ($raw_content) {
-    $content_html = strip_tags($raw_content, '<h2><h3><p><br><strong><em>');
+    $content_html = strip_tags($raw_content, '<h2><h3><p><br><strong><em><details><summary>');
 } else {
     $content_html = '<p>' . nl2br($summary) . '</p>';
 }
