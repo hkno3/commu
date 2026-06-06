@@ -362,8 +362,11 @@ def update_sitemap(all_articles: list) -> None:
             continue
         seen.add(aid)
         pub = (a.get("pub_date") or a.get("pubDate") or "")[:10] or now
+        slug = a.get("slug") or ""
+        is_hex = bool(re.match(r'^[0-9a-f]{8,}$', slug))
+        loc = f"{SITE_URL}/article.php?slug={slug}" if slug and not is_hex else f"{SITE_URL}/article.php?id={aid}"
         lines.append(f"""  <url>
-    <loc>{SITE_URL}/article.php?id={aid}</loc>
+    <loc>{loc}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <lastmod>{pub}</lastmod>
