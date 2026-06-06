@@ -174,14 +174,13 @@ function createArticleCard(article) {
   const color = CAT_COLORS[catKey] || '#1a73e8';
   const bg    = CAT_BG[catKey]    || '#e8f0fe';
   const imgHtml = article.image_url
-    ? `<div class="article-card-img"><img src="${escHtml(article.image_url)}" alt="" loading="lazy"></div>`
+    ? `<div class="article-card-img"><img src="${escHtml(article.image_url)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`
     : '';
   card.innerHTML = `
     ${imgHtml}
     <div class="article-card-body">
       <div class="article-card-meta">
         <span class="cat-badge" style="background:${bg}; color:${color};">${escHtml(article.category_label || article.category || '')}</span>
-        <span class="source-name">${escHtml(article.source || '')}</span>
         <span class="pub-date">${formatDate(article.pub_date || article.pubDate)}</span>
       </div>
       <h3>${escHtml(article.title)}</h3>
