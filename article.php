@@ -256,7 +256,7 @@ $og_url = ($article_slug && !$is_hex_slug)
             style="padding:7px 14px; border:none; border-radius:6px; background:#FEE500; font-size:12px; cursor:pointer; color:#000; font-weight:600;">
             💬 카카오톡
           </button>
-          <a href="https://blog.naver.com/PostWriteForm.naver?redirectURL=<?= urlencode($og_url) ?>"
+          <a href="https://share.naver.com/web/shareView?url=<?= urlencode($og_url) ?>&title=<?= urlencode(html_entity_decode($article['title'] ?? '')) ?>"
              target="_blank" rel="noopener"
              style="padding:7px 14px; border:none; border-radius:6px; background:#03C75A; font-size:12px; color:#fff; text-decoration:none; font-weight:600;">
             N 네이버 블로그
