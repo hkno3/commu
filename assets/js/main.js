@@ -65,7 +65,8 @@ function buildCategoryNav() {
       if (document.getElementById('article-list')) {
         switchCategory(key, btn);
       } else {
-        window.location.href = key === 'all' ? '/' : `/${encodeURIComponent(key)}`;
+        const slug = CAT_SLUG[key];
+        window.location.href = key === 'all' ? '/' : (slug ? `/${slug}` : `/?cat=${encodeURIComponent(key)}`);
       }
     };
     nav.appendChild(btn);
