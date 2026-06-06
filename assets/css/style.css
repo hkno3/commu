@@ -365,6 +365,30 @@ header {
   border-top: 1px solid #b8d4ef;
 }
 
+/* ── Table ── */
+.article-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 14px;
+}
+.article-body th {
+  background: #f0f4ff;
+  color: #1a3a5c;
+  font-weight: 700;
+  padding: 10px 14px;
+  border: 1px solid #dde3f0;
+  text-align: left;
+}
+.article-body td {
+  padding: 9px 14px;
+  border: 1px solid #e0e0e0;
+  vertical-align: top;
+}
+.article-body tr:nth-child(even) td {
+  background: #f9fafc;
+}
+
 /* ── RSS Panel ── */
 .rss-panel {
   border-bottom: 1px solid var(--border);
