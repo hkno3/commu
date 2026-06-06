@@ -279,8 +279,11 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
         result = resp.json()["content"][0]["text"].strip()
         print(f"[Claude 응답]\n{result[:300]}")
 
-        # ** 마크다운 제거
+        # 마크다운 기호 제거 및 변환
         result = result.replace("**", "").replace("*", "")
+        # ## → <h2>, ### → <h3> 변환
+        result = re.sub(r'^###\s*(.+)$', r'<h3>\1</h3>', result, flags=re.MULTILINE)
+        result = re.sub(r'^##\s*(.+)$', r'<h2>\1</h2>', result, flags=re.MULTILINE)
 
         new_title = None
         new_category = None
