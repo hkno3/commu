@@ -18,6 +18,12 @@ from datetime import datetime, timezone
 NAVER_CLIENT_ID = os.environ.get("NAVER_CLIENT_ID", "")
 NAVER_CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+GEMINI_API_KEYS = [
+    k for k in [
+        os.environ.get("GEMINI_API_KEY_1", ""),
+        os.environ.get("GEMINI_API_KEY_2", ""),
+    ] if k
+]
 NAVER_API_URL = "https://openapi.naver.com/v1/search/news.json"
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
@@ -222,17 +228,47 @@ def save_category_articles(category: str, articles: list) -> None:
 # Naver & Groq
 # ---------------------------------------------------------------------------
 
-def fetch_pollinations_image(slug: str, title: str) -> str:
-    """Pollinations.ai로 기사 이미지 생성 URL 반환. API 키 불필요."""
-    import urllib.parse, random
-    # 슬러그(영어)를 프롬프트로 사용
-    prompt = slug.replace("-", " ") if slug else title[:60]
-    prompt = f"news photo realistic {prompt}, high quality, professional journalism"
-    encoded = urllib.parse.quote(prompt)
-    seed = random.randint(1, 99999)
-    url = f"https://image.pollinations.ai/prompt/{encoded}?width=1200&height=630&nologo=true&seed={seed}"
-    print(f"[Pollinations] 이미지 URL 생성: {slug[:40]}")
-    return url
+def generate_image_gemini(slug: str, title: str) -> str | None:
+    """Gemini Imagen으로 이미지 생성 후 파일 저장. 실패 시 None 반환."""
+    import base64
+    if not GEMINI_API_KEYS:
+        return None
+
+    prompt = (
+        f"Professional news photo about: {slug.replace('-', ' ') if slug else title[:80]}. "
+        "Realistic, high quality, photojournalism style, no text, no watermark."
+    )
+    os.makedirs("assets/images/articles", exist_ok=True)
+    safe_slug = slug if slug else hashlib.md5(title.encode()).hexdigest()[:12]
+    filename = f"{safe_slug}.jpg"
+    filepath = f"assets/images/articles/{filename}"
+
+    for key in GEMINI_API_KEYS:
+        try:
+            url = (
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                f"imagen-3.0-generate-002:predict?key={key}"
+            )
+            payload = {
+                "instances": [{"prompt": prompt}],
+                "parameters": {"sampleCount": 1, "aspectRatio": "16:9"},
+            }
+            resp = requests.post(url, json=payload, timeout=40)
+            if resp.status_code == 429:
+                print(f"[Gemini] 할당량 초과, 다음 키 시도")
+                continue
+            resp.raise_for_status()
+            b64 = resp.json()["predictions"][0]["bytesBase64Encoded"]
+            with open(filepath, "wb") as f:
+                f.write(base64.b64decode(b64))
+            print(f"[Gemini] 이미지 저장: {filepath}")
+            return f"/assets/images/articles/{filename}"
+        except Exception as e:
+            print(f"[Gemini] 오류: {e}")
+            continue
+
+    print("[Gemini] 모든 키 실패, 이미지 없음")
+    return None
 
 
 def fetch_naver_news(query: str, display: int = 20) -> list:
@@ -444,9 +480,9 @@ def main():
         else:
             final_category = category
 
-        # Pollinations.ai 이미지 생성 URL
+        # Gemini Imagen 이미지 생성
         img_slug = rewritten.get("slug") or ""
-        image_url = fetch_pollinations_image(img_slug, title)
+        image_url = generate_image_gemini(img_slug, title)
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
         from datetime import timedelta
