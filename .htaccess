@@ -3,3 +3,6 @@ RewriteEngine On
 
 # article slug URL: /article/slug → article.php?slug=slug
 RewriteRule ^article/([a-z0-9-]+)/?$ /article.php?slug=$1 [L,QSA]
+
+# category URL: /politics → /?cat=politics
+RewriteRule ^(politics|economy|society|lifestyle|world|tech|realestate|health|sports|entertainment|auto|weather|crypto|stock|parenting|travel|game|fashion|food|education|environment|law|jobs|pets|movies)/?$ /index.php?cat=$1 [L,QSA]

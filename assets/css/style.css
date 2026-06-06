@@ -164,10 +164,14 @@ header {
   border: 2px solid transparent;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   transition: all 0.2s;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
 }
 .article-card-img {
-  width: 100%;
-  height: 200px;
+  flex-shrink: 0;
+  width: 120px;
+  min-height: 100px;
   overflow: hidden;
 }
 .article-card-img img {
@@ -181,7 +185,9 @@ header {
   transform: scale(1.03);
 }
 .article-card-body {
-  padding: 20px;
+  padding: 14px 16px;
+  flex: 1;
+  min-width: 0;
 }
 .article-card:hover, .article-card.active {
   border-color: var(--primary);

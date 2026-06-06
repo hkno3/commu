@@ -65,7 +65,7 @@ function buildCategoryNav() {
       if (document.getElementById('article-list')) {
         switchCategory(key, btn);
       } else {
-        window.location.href = key === 'all' ? '/' : `/?cat=${encodeURIComponent(key)}`;
+        window.location.href = key === 'all' ? '/' : `/${encodeURIComponent(key)}`;
       }
     };
     nav.appendChild(btn);
@@ -91,15 +91,26 @@ function buildCategoryNav() {
   moreRow.appendChild(moreBtn);
 }
 
+const CAT_SLUG = {
+  '정치':'politics','경제':'economy','사회':'society','생활_문화':'lifestyle',
+  '세계':'world','IT_과학':'tech','부동산':'realestate','헬스_건강':'health',
+  '스포츠':'sports','연예':'entertainment','자동차':'auto','날씨':'weather',
+  '가상화폐':'crypto','주식':'stock','육아':'parenting','여행':'travel',
+  '게임':'game','패션_뷰티':'fashion','음식_맛집':'food','교육':'education',
+  '환경':'environment','법률':'law','취업_직장':'jobs','반려동물':'pets','영화':'movies',
+};
+
 function switchCategory(cat, btnEl) {
   currentCategory = cat;
   page = 1;
   articles = [];
   document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
   btnEl.classList.add('active');
-  // 기사 상세 초기화
   const detail = document.getElementById('article-detail');
   if (detail) detail.innerHTML = '<div class="empty-state">기사를 선택하세요.</div>';
+  const slug = CAT_SLUG[cat];
+  const newUrl = cat === 'all' ? '/' : (slug ? `/${slug}` : `/?cat=${encodeURIComponent(cat)}`);
+  history.pushState({cat}, '', newUrl);
   loadArticles(true);
 }
 
