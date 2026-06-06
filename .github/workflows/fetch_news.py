@@ -448,6 +448,11 @@ def main():
         img_slug = rewritten.get("slug") or ""
         image_url = fetch_pollinations_image(img_slug, title)
 
+        # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
+        from datetime import timedelta
+        now_kst = datetime.now(timezone.utc) + timedelta(hours=9)
+        publish_time = now_kst.isoformat()
+
         new_article = {
             "article_id": article_id,
             "title": rewritten["title"],
@@ -459,8 +464,8 @@ def main():
             "original_url": original_url,
             "url": original_url,
             "source": source,
-            "pubDate": pub_date,
-            "pub_date": pub_date,
+            "pubDate": publish_time,
+            "pub_date": publish_time,
             "category": final_category.replace("/", "_"),
             "category_label": final_category,
         }
