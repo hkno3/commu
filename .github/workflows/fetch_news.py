@@ -22,6 +22,7 @@ GEMINI_API_KEYS = [
     k for k in [
         os.environ.get("GEMINI_API_KEY_1", ""),
         os.environ.get("GEMINI_API_KEY_2", ""),
+        os.environ.get("GEMINI_API_KEY_3", ""),
     ] if k
 ]
 NAVER_API_URL = "https://openapi.naver.com/v1/search/news.json"
@@ -261,6 +262,93 @@ def fetch_naver_news(query: str, display: int = 20) -> list:
         return []
 
 
+_gemini_key_index = 0  # 현재 사용 중인 Gemini 키 인덱스
+
+def rewrite_with_gemini(text: str, original_title: str) -> dict | None:
+    """Gemini로 재작성. 할당량 초과 시 다음 키 시도. 모두 소진 시 None 반환."""
+    global _gemini_key_index
+    if not GEMINI_API_KEYS:
+        return None
+
+    while _gemini_key_index < len(GEMINI_API_KEYS):
+        api_key = GEMINI_API_KEYS[_gemini_key_index]
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        payload = {
+            "contents": [{"parts": [{"text": f"{REWRITE_PROMPT}\n\n{text}"}]}],
+            "generationConfig": {"maxOutputTokens": 4000, "temperature": 0.9},
+        }
+        try:
+            resp = requests.post(url, json=payload, timeout=60)
+            if resp.status_code == 429:
+                print(f"[Gemini KEY_{_gemini_key_index+1}] 할당량 초과, 다음 키로 전환")
+                _gemini_key_index += 1
+                continue
+            resp.raise_for_status()
+            result = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+            print(f"[Gemini KEY_{_gemini_key_index+1} 응답]\n{result[:300]}")
+            return _parse_rewrite_result(result, original_title)
+        except Exception as exc:
+            print(f"[Gemini KEY_{_gemini_key_index+1}] 오류: {exc}")
+            _gemini_key_index += 1
+
+    print("[Gemini] 모든 키 소진")
+    return None
+
+
+def _parse_rewrite_result(result: str, original_title: str) -> dict:
+    """Claude/Gemini 공통 응답 파싱"""
+    result = result.replace("**", "").replace("*", "")
+    result = re.sub(r'^###\s*(.+)$', r'<h3>\1</h3>', result, flags=re.MULTILINE)
+    result = re.sub(r'^##\s*(.+)$', r'<h2>\1</h2>', result, flags=re.MULTILINE)
+
+    new_title = None
+    new_category = None
+    new_slug = None
+    summary_text = None
+    content_lines = []
+    section = None
+
+    for line in result.split("\n"):
+        stripped = line.strip()
+        if re.match(r"^제\s*목\s*[:：]", stripped):
+            new_title = re.sub(r"^제\s*목\s*[:：]\s*", "", stripped).strip()
+            section = None
+        elif re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
+            new_category = re.sub(r"^카\s*테\s*고\s*리\s*[:：]\s*", "", stripped).strip()
+            section = None
+        elif re.match(r"^슬\s*러\s*그\s*[:：]", stripped):
+            raw_slug = re.sub(r"^슬\s*러\s*그\s*[:：]\s*", "", stripped).strip()
+            new_slug = re.sub(r"[^a-z0-9-]", "", raw_slug.lower().replace(" ", "-"))
+            section = None
+        elif re.match(r"^요\s*약\s*[:：]", stripped):
+            summary_text = re.sub(r"^요\s*약\s*[:：]\s*", "", stripped).strip()
+            section = 'summary'
+        elif re.match(r"^내\s*용\s*[:：]", stripped):
+            section = 'content'
+        else:
+            if section == 'summary' and stripped and not summary_text:
+                summary_text = stripped
+            elif section == 'content':
+                if not re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
+                    content_lines.append(line)
+
+    if not new_title:
+        new_title = original_title
+
+    allowed = re.compile(r'<(?!/?(h2|h3|p|br|strong|details|summary|table|thead|tbody|tr|th|td)(\s|>))[^>]+>', re.IGNORECASE)
+    raw_content = "\n".join(content_lines).strip()
+    content_html = allowed.sub("", raw_content) if raw_content else f"<p>{summary_text or ''}</p>"
+
+    if not summary_text:
+        m = re.search(r"<p>(.*?)</p>", content_html, re.DOTALL)
+        summary_text = m.group(1).strip() if m else ""
+
+    if new_category:
+        print(f"[파싱] 카테고리: {new_category}")
+
+    return {"title": new_title, "slug": new_slug, "summary": summary_text, "content": content_html, "category": new_category}
+
+
 def rewrite_with_claude(text: str, original_title: str) -> dict:
     """제목·요약·HTML본문을 재작성. {'title': ..., 'summary': ..., 'content': ...} 반환"""
     if not ANTHROPIC_API_KEY:
@@ -280,64 +368,7 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
         resp.raise_for_status()
         result = resp.json()["content"][0]["text"].strip()
         print(f"[Claude 응답]\n{result[:300]}")
-
-        # 마크다운 기호 제거 및 변환
-        result = result.replace("**", "").replace("*", "")
-        # ## → <h2>, ### → <h3> 변환
-        result = re.sub(r'^###\s*(.+)$', r'<h3>\1</h3>', result, flags=re.MULTILINE)
-        result = re.sub(r'^##\s*(.+)$', r'<h2>\1</h2>', result, flags=re.MULTILINE)
-
-        new_title = None
-        new_category = None
-        new_slug = None
-        summary_text = None
-        content_lines = []
-        section = None  # 'summary' | 'content'
-
-        for line in result.split("\n"):
-            stripped = line.strip()
-            if re.match(r"^제\s*목\s*[:：]", stripped):
-                new_title = re.sub(r"^제\s*목\s*[:：]\s*", "", stripped).strip()
-                section = None
-            elif re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
-                new_category = re.sub(r"^카\s*테\s*고\s*리\s*[:：]\s*", "", stripped).strip()
-                section = None  # 카테고리는 항상 최우선 파싱 (내용: 이후에 나와도)
-            elif re.match(r"^슬\s*러\s*그\s*[:：]", stripped):
-                raw_slug = re.sub(r"^슬\s*러\s*그\s*[:：]\s*", "", stripped).strip()
-                # 소문자, 영문/숫자/하이픈만 허용
-                new_slug = re.sub(r"[^a-z0-9-]", "", raw_slug.lower().replace(" ", "-"))
-                section = None
-            elif re.match(r"^요\s*약\s*[:：]", stripped):
-                summary_text = re.sub(r"^요\s*약\s*[:：]\s*", "", stripped).strip()
-                section = 'summary'
-            elif re.match(r"^내\s*용\s*[:：]", stripped):
-                section = 'content'
-            else:
-                if section == 'summary' and stripped and not summary_text:
-                    summary_text = stripped
-                elif section == 'content':
-                    if not re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
-                        content_lines.append(line)
-
-        if not new_title:
-            print("[Claude] 제목 파싱 실패, 원본 사용")
-            new_title = original_title
-
-        # HTML 본문 조합 (허용 태그만 유지)
-        # strong, details, summary, style 속성 포함 허용
-        allowed = re.compile(r'<(?!/?(h2|h3|p|br|strong|details|summary|table|thead|tbody|tr|th|td)(\s|>))[^>]+>', re.IGNORECASE)
-        raw_content = "\n".join(content_lines).strip()
-        content_html = allowed.sub("", raw_content) if raw_content else f"<p>{summary_text or text}</p>"
-
-        # 요약이 없으면 본문에서 첫 p 태그 내용 추출
-        if not summary_text:
-            m = re.search(r"<p>(.*?)</p>", content_html, re.DOTALL)
-            summary_text = m.group(1).strip() if m else text
-
-        if new_category:
-            print(f"[Claude] 카테고리: {new_category}")
-
-        return {"title": new_title, "slug": new_slug, "summary": summary_text, "content": content_html, "category": new_category}
+        return _parse_rewrite_result(result, original_title)
     except Exception as exc:
         print(f"[Claude] 오류: {exc}")
         return {"title": original_title, "slug": None, "summary": text, "content": f"<p>{text}</p>"}
@@ -511,7 +542,10 @@ def main():
             continue
 
         print(f"[+] 새 기사: {title[:50]}")
-        rewritten = rewrite_with_claude(f"{title}\n{description}", title)
+        rewritten = rewrite_with_gemini(f"{title}\n{description}", title)
+        if rewritten is None:
+            print("[*] Gemini 키 모두 소진 → Claude로 대체")
+            rewritten = rewrite_with_claude(f"{title}\n{description}", title)
 
         # Claude가 분류한 카테고리가 유효하면 사용, 아니면 검색 카테고리 유지
         claude_cat = rewritten.get("category", "")
