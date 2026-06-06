@@ -34,6 +34,21 @@ DATA_DIR = "data"
 PUBLISHED_FILE = os.path.join(DATA_DIR, "published.json")
 MAX_PUBLISHED = 500
 
+# 카테고리 → ASCII 파일명 (FTP 한글 파일명 문제 해결)
+CAT_FILENAME = {
+    "정치": "politics", "경제": "economy", "사회": "society",
+    "생활/문화": "lifestyle", "세계": "world", "IT/과학": "tech",
+    "부동산": "realestate", "헬스/건강": "health", "스포츠": "sports",
+    "연예": "entertainment", "자동차": "auto", "날씨": "weather",
+    "가상화폐": "crypto", "주식": "stock", "육아": "parenting",
+    "여행": "travel", "게임": "game", "패션/뷰티": "fashion",
+    "음식/맛집": "food", "교육": "education", "환경": "environment",
+    "법률": "law", "취업/직장": "jobs", "반려동물": "pets", "영화": "movies",
+}
+
+def cat_to_filename(category: str) -> str:
+    return CAT_FILENAME.get(category, category.replace("/", "_"))
+
 _CAT_LIST = "정치, 경제, 사회, 생활/문화, 세계, IT/과학, 부동산, 헬스/건강, 스포츠, 연예, 자동차, 날씨, 가상화폐, 주식, 육아, 여행, 게임, 패션/뷰티, 음식/맛집, 교육, 환경, 법률, 취업/직장, 반려동물, 영화"
 
 REWRITE_PROMPT = (
@@ -169,7 +184,7 @@ def save_published(published: dict) -> None:
 
 
 def load_category_articles(category: str) -> list:
-    filename = category.replace("/", "_")
+    filename = cat_to_filename(category)
     path = os.path.join(DATA_DIR, f"{filename}.json")
     if os.path.exists(path):
         try:
@@ -181,7 +196,7 @@ def load_category_articles(category: str) -> list:
 
 
 def save_category_articles(category: str, articles: list) -> None:
-    filename = category.replace("/", "_")
+    filename = cat_to_filename(category)
     path = os.path.join(DATA_DIR, f"{filename}.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(articles, f, ensure_ascii=False, indent=2)

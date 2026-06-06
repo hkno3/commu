@@ -24,7 +24,7 @@ $articles = [];
 
 if ($category !== '' && $category !== 'all') {
     // Single category
-    $filename = str_replace('/', '_', $category);
+    $filename = cat_to_filename($category);
     $path = DATA_DIR . '/' . $filename . '.json';
     if (file_exists($path)) {
         $articles = json_decode(file_get_contents($path), true) ?: [];
