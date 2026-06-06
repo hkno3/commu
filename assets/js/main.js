@@ -61,7 +61,13 @@ function buildCategoryNav() {
     btn.className = 'cat-btn' + (key === currentCategory ? ' active' : '');
     btn.textContent = cat;
     btn.dataset.catKey = key;
-    btn.onclick = () => switchCategory(key, btn);
+    btn.onclick = () => {
+      if (document.getElementById('article-list')) {
+        switchCategory(key, btn);
+      } else {
+        window.location.href = key === 'all' ? '/' : `/?cat=${encodeURIComponent(key)}`;
+      }
+    };
     nav.appendChild(btn);
   });
 
