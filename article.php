@@ -289,15 +289,9 @@ $og_url = ($article_slug && !$is_hex_slug)
         <script>
           Kakao.init('35a152dc3d0307c3f0422c801712153d');
           function shareKakao() {
-            Kakao.Share.sendDefault({
-              objectType: 'feed',
-              content: {
-                title: <?= json_encode(html_entity_decode($article['title'] ?? '')) ?>,
-                description: <?= json_encode(mb_substr(strip_tags($article['summary'] ?? ''), 0, 100)) ?>,
-                imageUrl: <?= json_encode($article['image_url'] ?? 'https://newscommu.com/assets/images/favicon.png') ?>,
-                link: { mobileWebUrl: <?= json_encode($og_url) ?>, webUrl: <?= json_encode($og_url) ?> }
-              },
-              buttons: [{ title: '기사 보기', link: { mobileWebUrl: <?= json_encode($og_url) ?>, webUrl: <?= json_encode($og_url) ?> } }]
+            Kakao.Share.sendScrap({
+              requestUrl: <?= json_encode($og_url) ?>,
+              templateId: undefined
             });
           }
         </script>
