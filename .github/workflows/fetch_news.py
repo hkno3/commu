@@ -228,50 +228,6 @@ def save_category_articles(category: str, articles: list) -> None:
 # Naver & Groq
 # ---------------------------------------------------------------------------
 
-def generate_image_gemini(slug: str, title: str) -> str | None:
-    """Gemini Imagen으로 이미지 생성 후 파일 저장. 실패 시 None 반환."""
-    import base64
-    if not GEMINI_API_KEYS:
-        return None
-
-    prompt = (
-        f"Professional news photo about: {slug.replace('-', ' ') if slug else title[:80]}. "
-        "Realistic, high quality, photojournalism style, no text, no watermark."
-    )
-    os.makedirs("assets/images/articles", exist_ok=True)
-    safe_slug = slug if slug else hashlib.md5(title.encode()).hexdigest()[:12]
-    filename = f"{safe_slug}.jpg"
-    filepath = f"assets/images/articles/{filename}"
-
-    for key in GEMINI_API_KEYS:
-        try:
-            url = (
-                "https://generativelanguage.googleapis.com/v1beta/models/"
-                f"gemini-2.5-flash-preview-05-20:generateContent?key={key}"
-            )
-            payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"responseModalities": ["IMAGE", "TEXT"]},
-            }
-            resp = requests.post(url, json=payload, timeout=40)
-            if resp.status_code == 429:
-                print(f"[Gemini] 할당량 초과, 다음 키 시도")
-                continue
-            resp.raise_for_status()
-            parts = resp.json()["candidates"][0]["content"]["parts"]
-            for part in parts:
-                if "inlineData" in part:
-                    b64 = part["inlineData"]["data"]
-                    with open(filepath, "wb") as f:
-                        f.write(base64.b64decode(b64))
-                    print(f"[Gemini] 이미지 저장: {filepath}")
-                    return f"/assets/images/articles/{filename}"
-        except Exception as e:
-            print(f"[Gemini] 오류: {e}")
-            continue
-
-    print("[Gemini] 모든 키 실패, 이미지 없음")
-    return None
 
 
 def fetch_naver_news(query: str, display: int = 20) -> list:
@@ -483,9 +439,7 @@ def main():
         else:
             final_category = category
 
-        # Gemini Imagen 이미지 생성
-        img_slug = rewritten.get("slug") or ""
-        image_url = generate_image_gemini(img_slug, title)
+        image_url = None
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
         from datetime import timedelta

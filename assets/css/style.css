@@ -323,62 +323,46 @@ header {
 
 /* ── FAQ accordion ── */
 .article-body details {
-  background: #fff;
-  border: 1.5px solid #90caf9;
-  border-radius: 10px;
-  margin: 8px 0;
+  background: #deeaf7;
+  border: 1px solid #b8d4ef;
+  border-radius: 6px;
+  margin: 6px 0;
   overflow: hidden;
-  transition: box-shadow 0.2s;
 }
 .article-body details[open] {
-  box-shadow: 0 2px 12px rgba(26,115,232,0.12);
-  border-color: var(--primary);
+  background: #deeaf7;
 }
 .article-body details summary {
   list-style: none;
   cursor: pointer;
-  padding: 14px 16px;
+  padding: 11px 14px;
   font-weight: 600;
   font-size: 14px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: #e3f2fd;
+  gap: 8px;
   user-select: none;
+  color: #1a3a5c;
 }
 .article-body details summary::-webkit-details-marker { display: none; }
 .article-body details summary::before {
-  content: 'Q';
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  background: var(--primary);
-  color: #fff;
-  border-radius: 50%;
-  font-size: 12px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.article-body details summary::after {
-  content: '▾';
-  margin-left: auto;
-  font-size: 14px;
-  color: var(--primary);
+  content: '▶';
+  font-size: 10px;
+  color: #1a3a5c;
   transition: transform 0.2s;
+  flex-shrink: 0;
 }
-.article-body details[open] summary::after {
-  transform: rotate(-180deg);
+.article-body details[open] summary::before {
+  transform: rotate(90deg);
 }
 .article-body details > p {
-  padding: 14px 16px;
+  padding: 12px 14px;
   margin: 0;
   font-size: 14px;
   line-height: 1.75;
-  border-top: 1px solid #e3f2fd;
-  background: #f9fbff;
-  color: var(--text-main);
+  background: #deeaf7;
+  color: #1a3a5c;
+  border-top: 1px solid #b8d4ef;
 }
 
 /* ── RSS Panel ── */
