@@ -283,7 +283,7 @@ $og_url = ($article_slug && !$is_hex_slug)
         </div>
 
         <script>
-          Kakao.init('14feba7f2a84728a4b7d46e7d3a292d9');
+          Kakao.init('35a152dc3d0307c3f0422c801712153d');
           function shareKakao() {
             Kakao.Share.sendDefault({
               objectType: 'feed',
