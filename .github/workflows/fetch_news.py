@@ -247,22 +247,25 @@ def generate_image_gemini(slug: str, title: str) -> str | None:
         try:
             url = (
                 "https://generativelanguage.googleapis.com/v1beta/models/"
-                f"imagen-3.0-generate-002:predict?key={key}"
+                f"gemini-2.0-flash-preview-image-generation:generateContent?key={key}"
             )
             payload = {
-                "instances": [{"prompt": prompt}],
-                "parameters": {"sampleCount": 1, "aspectRatio": "16:9"},
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"responseModalities": ["IMAGE", "TEXT"]},
             }
             resp = requests.post(url, json=payload, timeout=40)
             if resp.status_code == 429:
                 print(f"[Gemini] 할당량 초과, 다음 키 시도")
                 continue
             resp.raise_for_status()
-            b64 = resp.json()["predictions"][0]["bytesBase64Encoded"]
-            with open(filepath, "wb") as f:
-                f.write(base64.b64decode(b64))
-            print(f"[Gemini] 이미지 저장: {filepath}")
-            return f"/assets/images/articles/{filename}"
+            parts = resp.json()["candidates"][0]["content"]["parts"]
+            for part in parts:
+                if "inlineData" in part:
+                    b64 = part["inlineData"]["data"]
+                    with open(filepath, "wb") as f:
+                        f.write(base64.b64decode(b64))
+                    print(f"[Gemini] 이미지 저장: {filepath}")
+                    return f"/assets/images/articles/{filename}"
         except Exception as e:
             print(f"[Gemini] 오류: {e}")
             continue
