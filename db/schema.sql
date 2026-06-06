@@ -37,3 +37,16 @@ CREATE TABLE IF NOT EXISTS `article_cache` (
     KEY `idx_category` (`category`),
     KEY `idx_pub_date` (`pub_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- Page views
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `page_views` (
+    `id`          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    `article_id`  VARCHAR(64)     NOT NULL,
+    `ip_hash`     VARCHAR(64)     NOT NULL,
+    `viewed_at`   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_article_id` (`article_id`),
+    KEY `idx_viewed_at` (`viewed_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
