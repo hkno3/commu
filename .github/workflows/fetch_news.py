@@ -312,7 +312,7 @@ def _parse_rewrite_result(result: str, original_title: str) -> dict:
             section = None
         elif re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
             new_category = re.sub(r"^카\s*테\s*고\s*리\s*[:：]\s*", "", stripped).strip()
-            section = None
+            # 카테고리는 content 섹션을 종료하지 않음 (본문 중간에 나와도 계속 수집)
         elif re.match(r"^슬\s*러\s*그\s*[:：]", stripped):
             raw_slug = re.sub(r"^슬\s*러\s*그\s*[:：]\s*", "", stripped).strip()
             new_slug = re.sub(r"[^a-z0-9-]", "", raw_slug.lower().replace(" ", "-"))
@@ -326,8 +326,7 @@ def _parse_rewrite_result(result: str, original_title: str) -> dict:
             if section == 'summary' and stripped and not summary_text:
                 summary_text = stripped
             elif section == 'content':
-                if not re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
-                    content_lines.append(line)
+                content_lines.append(line)
 
     if not new_title:
         new_title = original_title
