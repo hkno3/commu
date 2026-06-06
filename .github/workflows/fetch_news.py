@@ -304,7 +304,8 @@ def rewrite_with_claude(text: str, original_title: str) -> dict:
             new_title = original_title
 
         # HTML 본문 조합 (허용 태그만 유지)
-        allowed = re.compile(r'<(?!/?(h2|h3|p|br)(\s|>))[^>]+>', re.IGNORECASE)
+        # strong, details, summary, style 속성 포함 허용
+        allowed = re.compile(r'<(?!/?(h2|h3|p|br|strong|details|summary)(\s|>))[^>]+>', re.IGNORECASE)
         raw_content = "\n".join(content_lines).strip()
         content_html = allowed.sub("", raw_content) if raw_content else f"<p>{summary_text or text}</p>"
 
