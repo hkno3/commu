@@ -495,6 +495,16 @@ def main():
         description = strip_html(item.get("description", ""))
         source = item.get("link", "").split("/")[2] if item.get("link") else ""
 
+        # 원문 품질 필터
+        combined = f"{title} {description}".strip()
+        BAD_PATTERNS = ["It is assumed", "errors in the English", "translation", "[인물 탐구]", "[기고]", "[광고]"]
+        if len(combined) < 80:
+            print(f"    건너뜀 (원문 너무 짧음 {len(combined)}자): {title[:40]}")
+            continue
+        if any(p in combined for p in BAD_PATTERNS):
+            print(f"    건너뜀 (원문 이상 패턴): {title[:40]}")
+            continue
+
         print(f"[+] 새 기사: {title[:50]}")
         rewritten = rewrite_with_claude(f"{title}\n{description}", title)
 
