@@ -391,6 +391,16 @@ def main():
 
     # 2. 발행 이력 로드
     published = load_published()
+
+    # latest.json에 있는 article_id도 published에 추가 (published.json 삭제돼도 중복 방지)
+    latest_path = os.path.join(DATA_DIR, "latest.json")
+    if os.path.exists(latest_path):
+        try:
+            latest = json.load(open(latest_path, encoding="utf-8"))
+            for a in latest:
+                published["ids"].add(a.get("article_id", ""))
+        except Exception:
+            pass
     print(f"[*] 발행 이력: {len(published['ids'])}개")
 
     # 3. 네이버 기사 가져오기
