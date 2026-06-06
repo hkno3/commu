@@ -167,16 +167,22 @@ function createArticleCard(article) {
   const catKey = article.category ? article.category.replace(/\//g, '_') : '';
   const color = CAT_COLORS[catKey] || '#1a73e8';
   const bg    = CAT_BG[catKey]    || '#e8f0fe';
+  const imgHtml = article.image_url
+    ? `<div class="article-card-img"><img src="${escHtml(article.image_url)}" alt="" loading="lazy"></div>`
+    : '';
   card.innerHTML = `
-    <div class="article-card-meta">
-      <span class="cat-badge" style="background:${bg}; color:${color};">${escHtml(article.category_label || article.category || '')}</span>
-      <span class="source-name">${escHtml(article.source || '')}</span>
-      <span class="pub-date">${formatDate(article.pub_date || article.pubDate)}</span>
-    </div>
-    <h3>${escHtml(article.title)}</h3>
-    <p>${escHtml(article.summary || '')}</p>
-    <div class="article-card-footer">
-      <span class="comment-count">💬 <span id="cnt-${article.article_id}">${article.comment_count || 0}</span></span>
+    ${imgHtml}
+    <div class="article-card-body">
+      <div class="article-card-meta">
+        <span class="cat-badge" style="background:${bg}; color:${color};">${escHtml(article.category_label || article.category || '')}</span>
+        <span class="source-name">${escHtml(article.source || '')}</span>
+        <span class="pub-date">${formatDate(article.pub_date || article.pubDate)}</span>
+      </div>
+      <h3>${escHtml(article.title)}</h3>
+      <p>${escHtml(article.summary || '')}</p>
+      <div class="article-card-footer">
+        <span class="comment-count">💬 <span id="cnt-${article.article_id}">${article.comment_count || 0}</span></span>
+      </div>
     </div>
   `;
   card.onclick = () => {

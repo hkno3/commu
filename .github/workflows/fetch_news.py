@@ -18,9 +18,11 @@ from datetime import datetime, timezone
 NAVER_CLIENT_ID = os.environ.get("NAVER_CLIENT_ID", "")
 NAVER_CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
 
 NAVER_API_URL = "https://openapi.naver.com/v1/search/news.json"
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
+UNSPLASH_API_URL = "https://api.unsplash.com/search/photos"
 ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 
 CATEGORIES = [
@@ -205,6 +207,26 @@ def save_category_articles(category: str, articles: list) -> None:
 # ---------------------------------------------------------------------------
 # Naver & Groq
 # ---------------------------------------------------------------------------
+
+def fetch_unsplash_image(query: str) -> str:
+    """슬러그 키워드로 Unsplash 이미지 URL 반환. 실패시 빈 문자열."""
+    if not UNSPLASH_ACCESS_KEY:
+        return ""
+    try:
+        resp = requests.get(
+            UNSPLASH_API_URL,
+            params={"query": query, "per_page": 1, "orientation": "landscape"},
+            headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        results = resp.json().get("results", [])
+        if results:
+            return results[0]["urls"]["regular"]
+    except Exception as e:
+        print(f"[Unsplash] 오류: {e}")
+    return ""
+
 
 def fetch_naver_news(query: str, display: int = 20) -> list:
     headers = {
@@ -398,6 +420,12 @@ def main():
         else:
             final_category = category
 
+        # Unsplash 이미지 검색 (슬러그 키워드 사용)
+        img_query = rewritten.get("slug") or title
+        image_url = fetch_unsplash_image(img_query)
+        if image_url:
+            print(f"[Unsplash] 이미지: {image_url[:60]}")
+
         new_article = {
             "article_id": article_id,
             "title": rewritten["title"],
@@ -405,6 +433,7 @@ def main():
             "original_title": title,
             "summary": rewritten["summary"],
             "content": rewritten.get("content", ""),
+            "image_url": image_url,
             "original_url": original_url,
             "url": original_url,
             "source": source,
