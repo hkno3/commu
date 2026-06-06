@@ -198,21 +198,11 @@ $og_url = ($article_slug && !$is_hex_slug)
                   style="background:<?= htmlspecialchars($cat_meta['bg']) ?>; color:<?= htmlspecialchars($cat_meta['color']) ?>;">
               <?= htmlspecialchars($cat_raw) ?>
             </span>
-            <?php if ($source): ?>
-              <span><?= $source ?></span>
-            <?php endif; ?>
             <?php if ($pub_date): ?>
               <span><?= htmlspecialchars($pub_date) ?></span>
             <?php endif; ?>
           </div>
           <h1><?= $title ?></h1>
-          <?php if ($orig_url && $orig_url !== '#'): ?>
-            <a class="original-link"
-               href="<?= htmlspecialchars($orig_url, ENT_QUOTES, 'UTF-8') ?>"
-               target="_blank" rel="noopener noreferrer">
-              원문 보기 →
-            </a>
-          <?php endif; ?>
         </div>
 
         <?php if (!empty($article['image_url'])): ?>
