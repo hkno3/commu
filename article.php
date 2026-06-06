@@ -148,7 +148,16 @@ $og_url = ($article_slug && !$is_hex_slug)
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= $title ?> - <?= htmlspecialchars(SITE_NAME) ?></title>
   <meta name="description" content="<?= mb_substr(strip_tags($summary), 0, 160) ?>">
-  <meta name="keywords" content="<?= htmlspecialchars(($article['category_label'] ?? '') . ', ' . ($article['original_title'] ?? $article['title'] ?? '') . ', newscommu') ?>">
+  <?php
+    $kw_title = $article['original_title'] ?? $article['title'] ?? '';
+    $kw_words = preg_split('/[\s,·\-\[\]「」『』【】〔〕\/…]+/u', $kw_title, -1, PREG_SPLIT_NO_EMPTY);
+    $kw_words = array_values(array_unique(array_filter($kw_words, fn($w) => mb_strlen($w) >= 2)));
+    $kw_words = array_slice($kw_words, 0, 6);
+    array_unshift($kw_words, $article['category_label'] ?? '');
+    $kw_words[] = 'newscommu';
+    $keywords = implode(', ', array_filter($kw_words));
+  ?>
+  <meta name="keywords" content="<?= htmlspecialchars($keywords) ?>">
 
   <!-- Open Graph -->
   <meta property="og:title"       content="<?= $title ?>">
