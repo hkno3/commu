@@ -269,13 +269,14 @@ def rewrite_with_gemini(text: str, original_title: str) -> dict | None:
 
     while _gemini_key_index < len(GEMINI_API_KEYS):
         api_key = GEMINI_API_KEYS[_gemini_key_index]
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={api_key}"
         payload = {
             "contents": [{"parts": [{"text": f"{REWRITE_PROMPT}\n\n{text}"}]}],
             "generationConfig": {"maxOutputTokens": 8000, "temperature": 0.9},
+            "thinkingConfig": {"thinkingBudget": 0},
         }
         try:
-            resp = requests.post(url, json=payload, timeout=60)
+            resp = requests.post(url, json=payload, timeout=120)
             if resp.status_code == 429:
                 print(f"[Gemini KEY_{_gemini_key_index+1}] 할당량 초과, 다음 키로 전환")
                 _gemini_key_index += 1
