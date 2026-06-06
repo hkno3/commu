@@ -198,6 +198,9 @@ $og_url = ($article_slug && !$is_hex_slug)
   <link rel="stylesheet" href="/assets/css/style.css">
   <?php require_once __DIR__ . '/includes/head_codes.php'; ?>
 
+  <!-- Kakao SDK -->
+  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>
+
   <!-- AdSense -->
   <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<?= ADSENSE_PUBLISHER_ID ?>" crossorigin="anonymous"></script> -->
 </head>
@@ -249,15 +252,51 @@ $og_url = ($article_slug && !$is_hex_slug)
 
         <!-- Share buttons -->
         <div style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;">
-          <button onclick="copyLink()" style="padding:7px 14px; border:1px solid var(--border); border-radius:6px; background:#fff; font-size:12px; cursor:pointer;">
-            🔗 링크 복사
+          <button onclick="shareKakao()"
+            style="padding:7px 14px; border:none; border-radius:6px; background:#FEE500; font-size:12px; cursor:pointer; color:#000; font-weight:600;">
+            💬 카카오톡
           </button>
+          <a href="https://blog.naver.com/PostWriteForm.naver?redirectURL=<?= urlencode($og_url) ?>"
+             target="_blank" rel="noopener"
+             style="padding:7px 14px; border:none; border-radius:6px; background:#03C75A; font-size:12px; color:#fff; text-decoration:none; font-weight:600;">
+            N 네이버 블로그
+          </a>
+          <a href="https://www.threads.net/intent/post?text=<?= urlencode(html_entity_decode($title) . ' ' . $og_url) ?>"
+             target="_blank" rel="noopener"
+             style="padding:7px 14px; border:none; border-radius:6px; background:#000; font-size:12px; color:#fff; text-decoration:none; font-weight:600;">
+            🧵 스레드
+          </a>
+          <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($og_url) ?>"
+             target="_blank" rel="noopener"
+             style="padding:7px 14px; border:none; border-radius:6px; background:#1877F2; font-size:12px; color:#fff; text-decoration:none; font-weight:600;">
+            f 페이스북
+          </a>
           <a href="https://twitter.com/intent/tweet?url=<?= urlencode($og_url) ?>&text=<?= urlencode(html_entity_decode($title)) ?>"
              target="_blank" rel="noopener"
-             style="padding:7px 14px; border:1px solid #1DA1F2; border-radius:6px; background:#fff; font-size:12px; color:#1DA1F2; text-decoration:none;">
-            𝕏 공유
+             style="padding:7px 14px; border:none; border-radius:6px; background:#000; font-size:12px; color:#fff; text-decoration:none; font-weight:600;">
+            𝕏 트위터
           </a>
+          <button onclick="copyLink()"
+            style="padding:7px 14px; border:1px solid var(--border); border-radius:6px; background:#fff; font-size:12px; cursor:pointer;">
+            🔗 링크 복사
+          </button>
         </div>
+
+        <script>
+          Kakao.init('14feba7f2a84728a4b7d46e7d3a292d9');
+          function shareKakao() {
+            Kakao.Share.sendDefault({
+              objectType: 'feed',
+              content: {
+                title: <?= json_encode(html_entity_decode($article['title'] ?? '')) ?>,
+                description: <?= json_encode(mb_substr(strip_tags($article['summary'] ?? ''), 0, 100)) ?>,
+                imageUrl: <?= json_encode($article['image_url'] ?? 'https://newscommu.com/assets/images/favicon.png') ?>,
+                link: { mobileWebUrl: <?= json_encode($og_url) ?>, webUrl: <?= json_encode($og_url) ?> }
+              },
+              buttons: [{ title: '기사 보기', link: { mobileWebUrl: <?= json_encode($og_url) ?>, webUrl: <?= json_encode($og_url) ?> } }]
+            });
+          }
+        </script>
 
         <!-- AdSense Rectangle -->
         <!-- <ins class="adsbygoogle" style="display:block; margin:20px 0;" data-ad-client="<?= ADSENSE_PUBLISHER_ID ?>" data-ad-slot="XXXXXXXXXX" data-ad-format="rectangle"></ins> -->
