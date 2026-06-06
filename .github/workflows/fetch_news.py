@@ -18,11 +18,8 @@ from datetime import datetime, timezone
 NAVER_CLIENT_ID = os.environ.get("NAVER_CLIENT_ID", "")
 NAVER_CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
-
 NAVER_API_URL = "https://openapi.naver.com/v1/search/news.json"
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-UNSPLASH_API_URL = "https://api.unsplash.com/search/photos"
 ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 
 CATEGORIES = [
@@ -225,24 +222,17 @@ def save_category_articles(category: str, articles: list) -> None:
 # Naver & Groq
 # ---------------------------------------------------------------------------
 
-def fetch_unsplash_image(query: str) -> str:
-    """슬러그 키워드로 Unsplash 이미지 URL 반환. 실패시 빈 문자열."""
-    if not UNSPLASH_ACCESS_KEY:
-        return ""
-    try:
-        resp = requests.get(
-            UNSPLASH_API_URL,
-            params={"query": query, "per_page": 1, "orientation": "landscape"},
-            headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
-            timeout=10,
-        )
-        resp.raise_for_status()
-        results = resp.json().get("results", [])
-        if results:
-            return results[0]["urls"]["regular"]
-    except Exception as e:
-        print(f"[Unsplash] 오류: {e}")
-    return ""
+def fetch_pollinations_image(slug: str, title: str) -> str:
+    """Pollinations.ai로 기사 이미지 생성 URL 반환. API 키 불필요."""
+    import urllib.parse, random
+    # 슬러그(영어)를 프롬프트로 사용
+    prompt = slug.replace("-", " ") if slug else title[:60]
+    prompt = f"news photo realistic {prompt}, high quality, professional journalism"
+    encoded = urllib.parse.quote(prompt)
+    seed = random.randint(1, 99999)
+    url = f"https://image.pollinations.ai/prompt/{encoded}?width=1200&height=630&nologo=true&seed={seed}"
+    print(f"[Pollinations] 이미지 URL 생성: {slug[:40]}")
+    return url
 
 
 def fetch_naver_news(query: str, display: int = 20) -> list:
@@ -447,11 +437,9 @@ def main():
         else:
             final_category = category
 
-        # Unsplash 이미지 검색 (슬러그 키워드 사용)
-        img_query = rewritten.get("slug") or title
-        image_url = fetch_unsplash_image(img_query)
-        if image_url:
-            print(f"[Unsplash] 이미지: {image_url[:60]}")
+        # Pollinations.ai 이미지 생성 URL
+        img_slug = rewritten.get("slug") or ""
+        image_url = fetch_pollinations_image(img_slug, title)
 
         new_article = {
             "article_id": article_id,
