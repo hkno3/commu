@@ -148,6 +148,7 @@ $og_url = ($article_slug && !$is_hex_slug)
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= $title ?> - <?= htmlspecialchars(SITE_NAME) ?></title>
   <meta name="description" content="<?= mb_substr(strip_tags($summary), 0, 160) ?>">
+  <meta name="keywords" content="<?= htmlspecialchars(($article['category_label'] ?? '') . ', ' . ($article['original_title'] ?? $article['title'] ?? '') . ', newscommu') ?>">
 
   <!-- Open Graph -->
   <meta property="og:title"       content="<?= $title ?>">
@@ -159,7 +160,6 @@ $og_url = ($article_slug && !$is_hex_slug)
 
   <!-- Author / Publisher -->
   <meta name="author" content="pyo1211">
-  <link rel="author" href="https://newscommu.com">
   <link rel="publisher" href="https://newscommu.com">
 
   <!-- JSON-LD Structured Data -->
