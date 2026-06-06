@@ -93,7 +93,7 @@ $initial_cat = $CAT_SLUG_MAP[$cat_param] ?? ($cat_param ?: 'all');
           </div>
           <ul class="rss-list">
             <?php foreach ($rss_body as $item): ?>
-            <li><a href="<?= htmlspecialchars($item['link']) ?>" target="_blank" rel="noopener">
+            <li><a href="<?= htmlspecialchars($item['link']) ?>" title="<?= htmlspecialchars($item['title']) ?>" target="_blank" rel="noopener">
               <?= htmlspecialchars($item['title']) ?>
             </a></li>
             <?php endforeach; ?>
@@ -107,7 +107,7 @@ $initial_cat = $CAT_SLUG_MAP[$cat_param] ?? ($cat_param ?: 'all');
           </div>
           <ul class="rss-list">
             <?php foreach ($rss_biz as $item): ?>
-            <li><a href="<?= htmlspecialchars($item['link']) ?>" target="_blank" rel="noopener">
+            <li><a href="<?= htmlspecialchars($item['link']) ?>" title="<?= htmlspecialchars($item['title']) ?>" target="_blank" rel="noopener">
               <?= htmlspecialchars($item['title']) ?>
             </a></li>
             <?php endforeach; ?>
