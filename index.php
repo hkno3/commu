@@ -76,7 +76,7 @@ $initial_cat = $CAT_SLUG_MAP[$cat_param] ?? ($cat_param ?: 'all');
       <div class="article-list" id="article-list">
         <div class="loading">기사 불러오는 중...</div>
       </div>
-      <div id="scroll-sentinel" style="height:20px;"></div>
+      <div id="pagination" class="pagination"></div>
     </div>
 
     <!-- 오른쪽: 사이드바 -->

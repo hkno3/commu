@@ -99,7 +99,7 @@ $page_title = $cat_info ? $cat_info['label'] . ' 뉴스 - ' . SITE_NAME : SITE_N
         <div class="loading">기사 불러오는 중...</div>
       </div>
       <!-- Infinite scroll sentinel -->
-      <div id="scroll-sentinel" style="height:20px;"></div>
+      <div id="pagination" class="pagination"></div>
     </div>
     <!-- 오른쪽: 댓글 -->
     <div class="comment-panel">
@@ -132,7 +132,6 @@ $page_title = $cat_info ? $cat_info['label'] . ' 뉴스 - ' . SITE_NAME : SITE_N
   document.addEventListener('DOMContentLoaded', () => {
     buildCategoryNav();
     loadArticles(true);
-    setupInfiniteScroll();
   });
 </script>
 </body>
