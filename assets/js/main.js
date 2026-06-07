@@ -36,7 +36,8 @@ let currentArticle = null;
 let articles = [];
 let page = 1;
 let loading = false;
-let hasMore = true;
+let totalArticles = 0;
+const PAGE_SIZE = 20;
 let commentPage = 1;
 let commentHasMore = false;
 
@@ -45,7 +46,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // On article.php, ARTICLE_ID is defined; don't auto-load articles list
   if (typeof ARTICLE_ID === 'undefined') {
     loadArticles(true);
-    setupInfiniteScroll();
   }
 });
 
@@ -115,55 +115,63 @@ function switchCategory(cat, btnEl) {
   loadArticles(true);
 }
 
-async function loadArticles(reset = false) {
-  if (loading || (!reset && !hasMore)) return;
+function goToPage(p) {
+  if (loading || p === page || p < 1) return;
+  page = p;
+  loadArticles(false, true);
+  const listEl = document.getElementById('article-list');
+  if (listEl) listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function loadArticles(reset = false, replace = false) {
+  if (loading) return;
   loading = true;
 
   const listEl = document.getElementById('article-list');
   if (reset) {
     if (listEl) listEl.innerHTML = '<div class="loading">불러오는 중...</div>';
     page = 1;
-    hasMore = true;
+  } else if (replace) {
+    if (listEl) listEl.innerHTML = '<div class="loading">불러오는 중...</div>';
   }
 
   try {
-    const params = new URLSearchParams({ page, limit: 20 });
+    const params = new URLSearchParams({ page, limit: PAGE_SIZE });
     if (currentCategory !== 'all') params.set('category', currentCategory);
     const res = await fetch(`/api/articles.php?${params}`);
     const data = await res.json();
 
-    hasMore = !!data.has_more;
+    totalArticles = data.total || 0;
     if (data.articles && data.articles.length > 0) {
-      if (reset) {
-        articles = data.articles;
-        if (listEl) listEl.innerHTML = '';
-      } else {
-        articles = [...articles, ...data.articles];
-      }
-      appendArticleCards(data.articles, reset);
-      page++;
-    } else if (reset) {
+      articles = data.articles;
+      appendArticleCards(data.articles, true);
+    } else {
       if (listEl) listEl.innerHTML = '<div class="empty-state">기사가 없습니다.</div>';
     }
+    renderPagination();
   } catch (e) {
-    if (reset && listEl) listEl.innerHTML = '<div class="empty-state">데이터를 불러올 수 없습니다.</div>';
+    if (listEl) listEl.innerHTML = '<div class="empty-state">데이터를 불러올 수 없습니다.</div>';
   }
   loading = false;
 }
 
-function setupInfiniteScroll() {
-  const sentinel = document.getElementById('scroll-sentinel');
-  if (!sentinel) return;
-  const observer = new IntersectionObserver(entries => {
-    if (entries[0].isIntersecting && !loading && hasMore) {
-      loadArticles(false);
-    }
-  }, { rootMargin: '200px' });
-  observer.observe(sentinel);
-}
+function renderPagination() {
+  const wrap = document.getElementById('pagination');
+  if (!wrap) return;
+  const totalPages = Math.max(1, Math.ceil(totalArticles / PAGE_SIZE));
+  if (totalPages <= 1) { wrap.innerHTML = ''; return; }
 
-function loadMore() {
-  loadArticles(false);
+  const groupSize = 10;
+  const groupStart = Math.floor((page - 1) / groupSize) * groupSize + 1;
+  const groupEnd = Math.min(groupStart + groupSize - 1, totalPages);
+
+  let html = '';
+  html += `<button class="page-btn" ${groupStart === 1 ? 'disabled' : ''} onclick="goToPage(${groupStart - 1})">이전</button>`;
+  for (let p = groupStart; p <= groupEnd; p++) {
+    html += `<button class="page-btn${p === page ? ' active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+  }
+  html += `<button class="page-btn" ${groupEnd === totalPages ? 'disabled' : ''} onclick="goToPage(${groupEnd + 1})">다음</button>`;
+  wrap.innerHTML = html;
 }
 
 function appendArticleCards(newArticles, replace = false) {
