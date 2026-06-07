@@ -113,7 +113,7 @@ $page_title = $cat_info ? $cat_info['label'] . ' 뉴스 - ' . SITE_NAME : SITE_N
   const INITIAL_CATEGORY = <?= json_encode($cat_key !== '' ? $cat_key : 'all') ?>;
   const CAT_LABELS = <?= json_encode(array_map(fn($v) => $v['label'], $CATEGORIES)) ?>;
 </script>
-<script src="/assets/js/main.js"></script>
+<script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/assets/js/main.js') ?: time() ?>"></script>
 <script>
   // category.php: auto-load after main.js
   document.addEventListener('DOMContentLoaded', () => {

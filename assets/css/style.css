@@ -29,12 +29,12 @@ header {
   position: sticky;
   top: 0;
   z-index: 100;
-  padding: 0 20px;
 }
 
 .header-inner {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 0 20px;
   display: flex;
   align-items: center;
   height: 56px;
@@ -52,33 +52,21 @@ header {
 .cat-nav {
   background: #fff;
   border-bottom: 1px solid var(--border);
-  padding: 4px 20px;
+  padding: 4px 0;
 }
 
-.cat-nav-inner,
-.cat-more-row {
+.cat-nav-inner {
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
+  padding: 0 20px;
 }
 
 .cat-nav-inner {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  overflow: hidden;
-  max-height: 36px;
-  transition: max-height 0.3s ease;
-}
-
-.cat-nav-inner.expanded {
-  max-height: 300px;
-}
-
-.cat-more-row {
-  display: flex;
   justify-content: center;
-  padding: 2px 0 4px;
+  gap: 4px;
 }
 
 .cat-btn {
@@ -99,19 +87,6 @@ header {
   border-color: var(--primary);
   font-weight: 600;
 }
-
-.cat-more-btn {
-  padding: 6px 14px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: none;
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  transition: all 0.2s;
-}
-.cat-more-btn:hover { color: var(--primary); border-color: var(--primary); }
 
 /* ── Main Layout ── */
 .main-wrap {
@@ -167,6 +142,8 @@ header {
   display: flex;
   flex-direction: row;
   align-items: stretch;
+  text-decoration: none;
+  color: inherit;
 }
 .article-card-img {
   flex-shrink: 0;
