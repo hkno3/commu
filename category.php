@@ -121,5 +121,6 @@ $page_title = $cat_info ? $cat_info['label'] . ' 뉴스 - ' . SITE_NAME : SITE_N
     loadArticles(true);
   });
 </script>
+<?php include __DIR__ . '/includes/body_codes.php'; ?>
 </body>
 </html>
