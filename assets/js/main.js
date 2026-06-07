@@ -40,8 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-let catExpanded = false;
-
 function buildCategoryNav() {
   const nav = document.getElementById('cat-nav-inner');
   if (!nav) return;
@@ -62,25 +60,6 @@ function buildCategoryNav() {
     };
     nav.appendChild(btn);
   });
-
-  // 더보기 버튼 - nav 바깥 별도 행에 배치
-  let moreRow = document.getElementById('cat-more-row');
-  if (!moreRow) {
-    moreRow = document.createElement('div');
-    moreRow.id = 'cat-more-row';
-    moreRow.className = 'cat-more-row';
-    nav.parentElement.appendChild(moreRow);
-  }
-  moreRow.innerHTML = '';
-  const moreBtn = document.createElement('button');
-  moreBtn.className = 'cat-more-btn';
-  moreBtn.textContent = '더보기 ▼';
-  moreBtn.onclick = () => {
-    catExpanded = !catExpanded;
-    nav.classList.toggle('expanded', catExpanded);
-    moreBtn.textContent = catExpanded ? '접기 ▲' : '더보기 ▼';
-  };
-  moreRow.appendChild(moreBtn);
 }
 
 const CAT_SLUG = {
@@ -176,7 +155,14 @@ function appendArticleCards(newArticles, replace = false) {
 }
 
 function createArticleCard(article) {
-  const card = document.createElement('div');
+  const slug = article.slug;
+  const isHexId = slug && /^[0-9a-f]{8,}$/.test(slug);
+  const href = (slug && !isHexId)
+    ? `/article.php?slug=${encodeURIComponent(slug)}`
+    : `/article.php?id=${encodeURIComponent(article.article_id)}`;
+
+  const card = document.createElement('a');
+  card.href = href;
   card.className = 'article-card' + (currentArticle?.article_id === article.article_id ? ' active' : '');
   card.dataset.id = article.article_id;
   const catKey = article.category ? article.category.replace(/\//g, '_') : '';
@@ -199,15 +185,6 @@ function createArticleCard(article) {
       </div>
     </div>
   `;
-  card.onclick = () => {
-    const slug = article.slug;
-    const isHexId = slug && /^[0-9a-f]{8,}$/.test(slug);
-    if (slug && !isHexId) {
-      window.location.href = `/article.php?slug=${encodeURIComponent(slug)}`;
-    } else {
-      window.location.href = `/article.php?id=${encodeURIComponent(article.article_id)}`;
-    }
-  };
   return card;
 }
 
