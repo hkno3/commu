@@ -406,7 +406,11 @@ def _parse_rewrite_result(result: str, original_title: str) -> dict:
 def search_unsplash_image(keyword: str, title: str) -> str | None:
     """Unsplash에서 키워드로 이미지 후보를 검색하고, 기사 제목과 가장 관련성 높은 것을 선택.
     이미지를 다운로드하지 않고 Unsplash가 제공하는 URL을 그대로 반환 (서버 용량 사용 안 함)"""
-    if not UNSPLASH_ACCESS_KEY or not keyword:
+    if not UNSPLASH_ACCESS_KEY:
+        print("[Unsplash] UNSPLASH_ACCESS_KEY가 설정되지 않음")
+        return None
+    if not keyword:
+        print("[Unsplash] 검색 키워드가 없음")
         return None
     try:
         resp = requests.get(
@@ -417,6 +421,7 @@ def search_unsplash_image(keyword: str, title: str) -> str | None:
         )
         resp.raise_for_status()
         results = resp.json().get("results", [])
+        print(f"[Unsplash] '{keyword}' 검색 결과 {len(results)}건 (남은 호출: {resp.headers.get('X-Ratelimit-Remaining', '?')})")
         if not results:
             return None
 
@@ -630,7 +635,10 @@ def main():
         else:
             final_category = category
 
-        image_url = search_unsplash_image(rewritten.get("image_keyword") or final_category, rewritten["title"])
+        image_search_keyword = rewritten.get("image_keyword") or final_category
+        print(f"[이미지 검색] 키워드: '{image_search_keyword}' (Gemini 추출: '{rewritten.get('image_keyword')}')")
+        image_url = search_unsplash_image(image_search_keyword, rewritten["title"])
+        print(f"[이미지 검색 결과] {'찾음 → ' + image_url if image_url else '못 찾음 (image_url=None)'}")
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
         from datetime import timedelta
