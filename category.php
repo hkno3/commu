@@ -42,7 +42,7 @@ $page_title = $cat_info ? $cat_info['label'] . ' 뉴스 - ' . SITE_NAME : SITE_N
   <meta name="description" content="<?= htmlspecialchars($cat_info ? $cat_info['label'] . ' 분야 최신 뉴스 모음' : SITE_DESC) ?>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/assets/css/style.css') ?: time() ?>">
   <!-- AdSense -->
   <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<?= ADSENSE_PUBLISHER_ID ?>" crossorigin="anonymous"></script> -->
 </head>
