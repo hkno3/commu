@@ -136,6 +136,19 @@ if (isset($_GET['delete']) && ($_SESSION['admin_auth'] ?? false)) {
     }
 }
 
+// ── 댓글 삭제 ──
+if (isset($_GET['del_comment']) && ($_SESSION['admin_auth'] ?? false)) {
+    $del_comment_id = (int)$_GET['del_comment'];
+    if ($del_comment_id > 0) {
+        require_once __DIR__ . '/../db/init.php';
+        $pdo = db_connect();
+        $stmt = $pdo->prepare("DELETE FROM comments WHERE id = ?");
+        $stmt->execute([$del_comment_id]);
+        header('Location: /admin_rudwnQkd1/?comment_deleted=1' . (isset($_GET['cat']) ? '&cat=' . urlencode($_GET['cat']) : ''));
+        exit;
+    }
+}
+
 $is_auth = $_SESSION['admin_auth'] ?? false;
 
 $all_cats = ["정치","경제","사회","생활/문화","IT/과학","부동산","헬스/건강","스포츠","연예","자동차","가상화폐","주식"];
@@ -183,6 +196,26 @@ if ($is_auth && !empty($articles)) {
             foreach ($stmt->fetchAll() as $row) {
                 $view_stats[$row['article_id']] = ['today' => (int)$row['today'], 'total' => (int)$row['total']];
             }
+        }
+    } catch (Exception $e) {}
+}
+
+// 최근 댓글 로드 (최신순 50개)
+$recent_comments = [];
+if ($is_auth) {
+    try {
+        require_once __DIR__ . '/../db/init.php';
+        $pdo = db_connect();
+        $stmt = $pdo->query("SELECT id, article_id, nickname, content, created_at FROM comments ORDER BY created_at DESC LIMIT 50");
+        $recent_comments = $stmt->fetchAll();
+
+        // article_id → 제목 매핑 (latest.json)
+        $latest_path = DATA_DIR . '/latest.json';
+        if (file_exists($latest_path)) {
+            $all_latest = json_decode(file_get_contents($latest_path), true) ?: [];
+            $article_title_map = array_column($all_latest, 'title', 'article_id');
+        } else {
+            $article_title_map = [];
         }
     } catch (Exception $e) {}
 }
@@ -290,6 +323,39 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
       <textarea name="body_codes" rows="8" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-family:monospace; font-size:13px; resize:vertical;"><?= htmlspecialchars($body_codes) ?></textarea>
       <button type="submit" style="margin-top:8px; padding:8px 24px; background:#1a73e8; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer;">저장</button>
     </form>
+  </div>
+
+  <!-- 댓글 관리 -->
+  <div style="background:#fff; border-radius:8px; padding:20px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <h2 style="font-size:16px; margin-bottom:12px;">💬 댓글 관리 (악플/스팸 삭제)</h2>
+    <?php if (isset($_GET['comment_deleted'])): ?>
+      <div class="notice">✅ 댓글이 삭제되었습니다.</div>
+    <?php endif; ?>
+    <?php if (empty($recent_comments)): ?>
+      <p style="color:#888; font-size:13px;">최근 댓글이 없습니다.</p>
+    <?php else: ?>
+      <p style="color:#888; font-size:12px; margin-bottom:10px;">최신 댓글 <?= count($recent_comments) ?>개</p>
+      <?php foreach ($recent_comments as $c): ?>
+        <div class="article-row">
+          <div class="article-info">
+            <div class="article-title">
+              <span class="cat-badge"><?= htmlspecialchars($c['nickname']) ?></span>
+              <?= nl2br(htmlspecialchars($c['content'])) ?>
+            </div>
+            <div class="article-meta">
+              <?= htmlspecialchars($article_title_map[$c['article_id']] ?? $c['article_id']) ?>
+              &nbsp;·&nbsp; <?= htmlspecialchars(substr($c['created_at'], 0, 16)) ?>
+            </div>
+          </div>
+          <div class="btn-group">
+            <a href="?del_comment=<?= $c['id'] ?>&cat=<?= urlencode($cur_cat) ?>"
+               onclick="return confirm('이 댓글을 삭제하시겠습니까?')">
+              <button class="del-btn">삭제</button>
+            </a>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
   </div>
 
   <!-- 카테고리 탭 -->
