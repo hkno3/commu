@@ -37,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
     $new_cat      = trim($_POST['new_cat'] ?? '');
     $new_title    = trim($_POST['new_title'] ?? '');
     $new_summary  = trim($_POST['new_summary'] ?? '');
+    $new_content  = trim($_POST['new_content'] ?? '');
     $new_cat_label = trim($_POST['new_cat_label'] ?? $new_cat);
     $new_image_url = trim($_POST['new_image_url'] ?? '');
     $new_image_url = ($new_image_url !== '') ? $new_image_url : null;
@@ -51,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
                 if (($a['article_id'] ?? '') === $edit_id) {
                     $a['title']          = $new_title ?: $a['title'];
                     $a['summary']        = $new_summary ?: $a['summary'];
+                    $a['content']        = $new_content !== '' ? $new_content : ($a['content'] ?? '');
                     $a['category']       = $new_cat;
                     $a['category_label'] = $new_cat_label;
                     $a['image_url']      = $new_image_url;
@@ -210,7 +212,7 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
 .btn-group { display: flex; flex-direction: column; gap: 6px; }
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
 .modal-overlay.open { display: flex; }
-.modal { background: #fff; border-radius: 12px; padding: 28px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+.modal { background: #fff; border-radius: 12px; padding: 28px; width: 100%; max-width: 760px; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
 .modal h3 { font-size: 17px; margin-bottom: 20px; }
 .modal label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #444; }
 .modal input, .modal textarea, .modal select { width: 100%; padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 14px; font-family: inherit; }
@@ -307,6 +309,7 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
           'label' => $cat_label,
           'title' => $a['title'] ?? '',
           'summary' => $a['summary'] ?? '',
+          'content' => $a['content'] ?? '',
           'image' => $a['image_url'] ?? '',
           'cur_cat' => $cur_cat,
         ]), ENT_QUOTES) ?>)">수정</button>
@@ -331,6 +334,8 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
       <input type="text" name="new_title" id="ef-title" maxlength="200">
       <label>요약 내용</label>
       <textarea name="new_summary" id="ef-summary" rows="6"></textarea>
+      <label>본문 내용 (HTML)</label>
+      <textarea name="new_content" id="ef-content" rows="16" style="font-family:monospace; font-size:12px;"></textarea>
       <label>이미지 URL (비워두면 이미지 삭제됨)</label>
       <input type="text" name="new_image_url" id="ef-image" placeholder="https://...">
       <div id="ef-image-preview" style="margin:6px 0;"></div>
@@ -361,6 +366,7 @@ function openEdit(data) {
   document.getElementById('ef-cur-cat').value = data.cur_cat;
   document.getElementById('ef-title').value   = data.title;
   document.getElementById('ef-summary').value = data.summary;
+  document.getElementById('ef-content').value = data.content || '';
   document.getElementById('ef-image').value   = data.image || '';
   document.getElementById('ef-cat').value     = data.cat;
   updateImagePreview();
