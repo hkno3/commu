@@ -121,6 +121,42 @@ $summary     = htmlspecialchars($article['summary'] ?? '', ENT_QUOTES, 'UTF-8');
 $raw_content = $article['content'] ?? '';
 if ($raw_content) {
     $content_html = strip_tags($raw_content, '<h2><h3><p><br><strong><em><details><summary><table><thead><tbody><tr><th><td>');
+
+    // 닫히지 않은 <table>이 있으면 그 뒤에 오는 <h2>/<h3> 섹션(자주 묻는 질문, 글을 마치며 등)과
+    // 사이드바 요소까지 표 안으로 끌려 들어가 렌더링이 붕괴됨 -> 다음 헤딩 앞에 닫는 태그 보강
+    $open_count  = preg_match_all('/<table\b/i', $content_html);
+    $close_count = preg_match_all('/<\/table>/i', $content_html);
+    if ($open_count > $close_count) {
+        $last_table_pos = 0;
+        if (preg_match_all('/<table\b/i', $content_html, $m, PREG_OFFSET_CAPTURE)) {
+            $last_table_pos = end($m[0])[1];
+        }
+        if (preg_match('/<h[23]\b/i', $content_html, $hm, PREG_OFFSET_CAPTURE, $last_table_pos)) {
+            $insert_pos = $hm[0][1];
+            $content_html = substr($content_html, 0, $insert_pos) . '</table>' . substr($content_html, $insert_pos);
+        } else {
+            $content_html .= '</table>';
+        }
+    }
+
+    // 그 외 닫히지 않은 태그(<tr>, <td> 등) 구조 복구 -> DOMDocument로 정규화
+    $dom = new DOMDocument();
+    libxml_use_internal_errors(true);
+    $dom->loadHTML(
+        '<?xml encoding="utf-8"?><div id="__wrap">' . $content_html . '</div>',
+        LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_HTML_NODEFDTD | LIBXML_HTML_NOIMPLIED
+    );
+    libxml_clear_errors();
+    $wrapper = $dom->getElementById('__wrap');
+    if ($wrapper) {
+        $fixed = '';
+        foreach ($wrapper->childNodes as $child) {
+            $fixed .= $dom->saveHTML($child);
+        }
+        if (trim($fixed) !== '') {
+            $content_html = $fixed;
+        }
+    }
 } else {
     $content_html = '<p>' . nl2br($summary) . '</p>';
 }
