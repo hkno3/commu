@@ -315,6 +315,7 @@ try {
         <div class="article-thumb">
           <img src="<?= htmlspecialchars($article['image_url'], ENT_QUOTES, 'UTF-8') ?>"
                alt="<?= $title ?>"
+               onerror="this.parentElement.style.display='none'"
                style="width:100%; border-radius:10px; margin-bottom:20px; max-height:400px; object-fit:cover;">
         </div>
         <?php endif; ?>
