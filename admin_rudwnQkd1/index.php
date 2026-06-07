@@ -38,6 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
     $new_title    = trim($_POST['new_title'] ?? '');
     $new_summary  = trim($_POST['new_summary'] ?? '');
     $new_cat_label = trim($_POST['new_cat_label'] ?? $new_cat);
+    $new_image_url = trim($_POST['new_image_url'] ?? '');
+    $new_image_url = ($new_image_url !== '') ? $new_image_url : null;
 
     if ($edit_id && $old_cat && $new_cat) {
         // 기존 카테고리에서 기사 찾기
@@ -51,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
                     $a['summary']        = $new_summary ?: $a['summary'];
                     $a['category']       = $new_cat;
                     $a['category_label'] = $new_cat_label;
+                    $a['image_url']      = $new_image_url;
                     $article_data = $a;
                     break;
                 }
@@ -79,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
                     $a['summary']        = $new_summary ?: $a['summary'];
                     $a['category']       = $new_cat;
                     $a['category_label'] = $new_cat_label;
+                    $a['image_url']      = $new_image_url;
                     break;
                 }
             }
@@ -290,6 +294,7 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
         <div class="article-summary"><?= htmlspecialchars($a['summary'] ?? '') ?></div>
         <div class="article-meta">
           <?= htmlspecialchars($a['source'] ?? '') ?> · <?= htmlspecialchars(substr($a['pub_date'] ?? '', 0, 16)) ?>
+          &nbsp;·&nbsp; <?= !empty($a['image_url']) ? '🖼 이미지 있음' : '🚫 이미지 없음' ?>
           <?php $vs = $view_stats[$a['article_id'] ?? ''] ?? null; if ($vs): ?>
             &nbsp;·&nbsp; 👁 오늘 <?= $vs['today'] ?> / 전체 <?= $vs['total'] ?>
           <?php endif; ?>
@@ -302,6 +307,7 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
           'label' => $cat_label,
           'title' => $a['title'] ?? '',
           'summary' => $a['summary'] ?? '',
+          'image' => $a['image_url'] ?? '',
           'cur_cat' => $cur_cat,
         ]), ENT_QUOTES) ?>)">수정</button>
         <a href="?delete=<?= urlencode($a['article_id']) ?>&cat=<?= urlencode($cat_file) ?>"
@@ -325,6 +331,9 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
       <input type="text" name="new_title" id="ef-title" maxlength="200">
       <label>요약 내용</label>
       <textarea name="new_summary" id="ef-summary" rows="6"></textarea>
+      <label>이미지 URL (비워두면 이미지 삭제됨)</label>
+      <input type="text" name="new_image_url" id="ef-image" placeholder="https://...">
+      <div id="ef-image-preview" style="margin:6px 0;"></div>
       <label>카테고리</label>
       <select name="new_cat" id="ef-cat">
         <?php foreach ($all_cats as $c): ?>
@@ -352,9 +361,19 @@ function openEdit(data) {
   document.getElementById('ef-cur-cat').value = data.cur_cat;
   document.getElementById('ef-title').value   = data.title;
   document.getElementById('ef-summary').value = data.summary;
+  document.getElementById('ef-image').value   = data.image || '';
   document.getElementById('ef-cat').value     = data.cat;
+  updateImagePreview();
   document.getElementById('edit-modal').classList.add('open');
 }
+function updateImagePreview() {
+  const url = document.getElementById('ef-image').value.trim();
+  const box = document.getElementById('ef-image-preview');
+  box.innerHTML = url
+    ? `<img src="${url.replace(/"/g, '&quot;')}" style="max-width:100%; max-height:160px; border-radius:6px;" onerror="this.style.display='none'">`
+    : '';
+}
+document.getElementById('ef-image').addEventListener('input', updateImagePreview);
 function closeEdit() {
   document.getElementById('edit-modal').classList.remove('open');
 }
