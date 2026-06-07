@@ -50,6 +50,15 @@ CAT_FILENAME = {
 def cat_to_filename(category: str) -> str:
     return CAT_FILENAME.get(category, category.replace("/", "_"))
 
+# 이미지 검색 실패 시 폴백용 영문 키워드 (카테고리별 보편적인 검색어)
+CAT_IMAGE_FALLBACK = {
+    "정치": "politics", "경제": "economy", "사회": "city street",
+    "생활/문화": "lifestyle", "IT/과학": "technology",
+    "부동산": "real estate", "헬스/건강": "health", "스포츠": "sports",
+    "연예": "entertainment", "자동차": "car",
+    "가상화폐": "cryptocurrency", "주식": "stock market",
+}
+
 _CAT_LIST = "정치, 경제, 사회, 생활/문화, IT/과학, 부동산, 헬스/건강, 스포츠, 연예, 자동차, 가상화폐, 주식"
 
 REWRITE_PROMPT = (
@@ -638,6 +647,23 @@ def main():
         image_search_keyword = rewritten.get("image_keyword") or final_category
         print(f"[이미지 검색] 키워드: '{image_search_keyword}' (Gemini 추출: '{rewritten.get('image_keyword')}')")
         image_url = search_unsplash_image(image_search_keyword, rewritten["title"])
+
+        # 1차 검색 실패 시 폴백: 콤마/공백으로 쪼갠 첫 구절 → 카테고리 영문 키워드 순으로 재시도
+        if not image_url:
+            fallback_keywords = []
+            first_chunk = re.split(r"[,/]", image_search_keyword)[0].strip()
+            if first_chunk and first_chunk.lower() != image_search_keyword.lower():
+                fallback_keywords.append(first_chunk)
+            cat_fallback = CAT_IMAGE_FALLBACK.get(final_category)
+            if cat_fallback:
+                fallback_keywords.append(cat_fallback)
+
+            for fb_keyword in fallback_keywords:
+                print(f"[이미지 검색] 1차 검색 실패, 폴백 키워드로 재시도: '{fb_keyword}'")
+                image_url = search_unsplash_image(fb_keyword, rewritten["title"])
+                if image_url:
+                    break
+
         print(f"[이미지 검색 결과] {'찾음 → ' + image_url if image_url else '못 찾음 (image_url=None)'}")
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
