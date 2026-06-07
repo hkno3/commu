@@ -649,6 +649,11 @@ header {
     position: static;
   }
 
+  .article-panel {
+    height: auto;
+    overflow-y: visible;
+  }
+
   .comment-panel {
     height: 400px;
   }
