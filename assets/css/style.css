@@ -158,6 +158,20 @@ header {
   display: block;
   transition: transform 0.3s;
 }
+
+.article-thumb-img {
+  width: 100%;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  max-height: 400px;
+  object-fit: cover;
+  display: block;
+}
+@media (max-width: 768px) {
+  .article-thumb-img {
+    max-height: 220px;
+  }
+}
 .article-card:hover .article-card-img img {
   transform: scale(1.03);
 }

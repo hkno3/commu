@@ -267,7 +267,7 @@ try {
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="/assets/images/favicon.png">
   <link rel="apple-touch-icon" href="/assets/images/favicon.png">
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/assets/css/style.css') ?: time() ?>">
   <?php require_once __DIR__ . '/includes/head_codes.php'; ?>
 
   <!-- Kakao SDK -->
@@ -316,7 +316,7 @@ try {
           <img src="<?= htmlspecialchars($article['image_url'], ENT_QUOTES, 'UTF-8') ?>"
                alt="<?= $title ?>"
                onerror="this.parentElement.style.display='none'"
-               style="width:100%; border-radius:10px; margin-bottom:20px; max-height:400px; object-fit:cover;">
+               class="article-thumb-img">
         </div>
         <?php endif; ?>
 
