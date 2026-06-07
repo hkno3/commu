@@ -6,3 +6,5 @@ Disallow: /db/
 Disallow: /data/
 
 Sitemap: https://newscommu.com/sitemap.xml
+
+#DaumWebMasterTool:cc7ef6c50d02f5f25296248418444646e1f26d111dbd1b78510511ca047e6cb4:/E8KAMvcHm386WywqwB9yg==

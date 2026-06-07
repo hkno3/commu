@@ -272,7 +272,7 @@ def rewrite_with_gemini(text: str, original_title: str) -> dict | None:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
         payload = {
             "contents": [{"parts": [{"text": f"{REWRITE_PROMPT}\n\n{text}"}]}],
-            "generationConfig": {"maxOutputTokens": 8000, "temperature": 0.9},
+            "generationConfig": {"maxOutputTokens": 10000, "temperature": 0.9},
         }
         try:
             resp = requests.post(url, json=payload, timeout=120)
@@ -307,12 +307,20 @@ def _parse_rewrite_result(result: str, original_title: str) -> dict:
 
     for line in result.split("\n"):
         stripped = line.strip()
+        # 본문 섹션에 진입한 후에는 어떤 필드 마커가 나와도 본문 수집을 멈추지 않음
+        # (카테고리 등 마커성 텍스트가 본문 중간에 우연히 등장해도 잘림 방지)
+        if section == 'content':
+            if re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
+                new_category = re.sub(r"^카\s*테\s*고\s*리\s*[:：]\s*", "", stripped).strip()
+            else:
+                content_lines.append(line)
+            continue
+
         if re.match(r"^제\s*목\s*[:：]", stripped):
             new_title = re.sub(r"^제\s*목\s*[:：]\s*", "", stripped).strip()
             section = None
         elif re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
             new_category = re.sub(r"^카\s*테\s*고\s*리\s*[:：]\s*", "", stripped).strip()
-            # 카테고리는 content 섹션을 종료하지 않음 (본문 중간에 나와도 계속 수집)
         elif re.match(r"^슬\s*러\s*그\s*[:：]", stripped):
             raw_slug = re.sub(r"^슬\s*러\s*그\s*[:：]\s*", "", stripped).strip()
             new_slug = re.sub(r"[^a-z0-9-]", "", raw_slug.lower().replace(" ", "-"))
@@ -325,8 +333,6 @@ def _parse_rewrite_result(result: str, original_title: str) -> dict:
         else:
             if section == 'summary' and stripped and not summary_text:
                 summary_text = stripped
-            elif section == 'content':
-                content_lines.append(line)
 
     if not new_title:
         new_title = original_title
