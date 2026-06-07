@@ -110,6 +110,7 @@ REWRITE_PROMPT = (
     "- 독자가 '아 이 에디터가 진짜 관심 있구나' 느낄 수 있게\n"
     "- 실용적인 팁, 독자가 바로 써먹을 수 있는 정보 반드시 포함\n\n"
     "사용 가능 태그: h2, h3, p, strong, details, summary, table, thead, tbody, tr, th, td (인라인 스타일 허용)\n"
+    "※ 본문의 모든 단락(문장 덩어리)은 반드시 <p>...</p> 태그로 감쌀 것. 태그 없이 줄바꿈만 된 문장은 가독성을 해침.\n"
     "금지: 마크다운 **, ## 등 / 딱딱한 문체(~했습니다) → 구어체(~했대요, ~인 것 같아요)\n"
     "본문 전체 1200~1800자 (반드시 1200자 이상 작성)\n"
     "'제목:', '카테고리:', '슬러그:', '요약:', '내용:' 앞에 ** 붙이지 말 것"
@@ -357,7 +358,19 @@ def _parse_rewrite_result(result: str, original_title: str) -> dict:
         new_title = original_title
 
     allowed = re.compile(r'<(?!/?(h2|h3|p|br|strong|details|summary|table|thead|tbody|tr|th|td)(\s|>))[^>]+>', re.IGNORECASE)
-    raw_content = "\n".join(content_lines).strip()
+
+    # 줄바꿈만 되고 <p> 등 블록 태그로 감싸지지 않은 일반 텍스트 줄은
+    # 브라우저가 한 덩어리로 이어붙여 가독성이 떨어짐 -> 자동으로 <p>로 감싸 보강
+    block_tag_re = re.compile(r"^<(h2|h3|p|details|summary|table|thead|tbody|tr|th|td)\b", re.IGNORECASE)
+    wrapped_lines = []
+    for line in content_lines:
+        stripped = line.strip()
+        if stripped and not block_tag_re.match(stripped):
+            wrapped_lines.append(f"<p>{stripped}</p>")
+        else:
+            wrapped_lines.append(line)
+
+    raw_content = "\n".join(wrapped_lines).strip()
     content_html = allowed.sub("", raw_content) if raw_content else f"<p>{summary_text or ''}</p>"
 
     if not summary_text:
