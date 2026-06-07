@@ -25,6 +25,8 @@ GEMINI_API_KEYS = [
     ] if k
 ]
 NAVER_API_URL = "https://openapi.naver.com/v1/search/news.json"
+UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
+UNSPLASH_SEARCH_URL = "https://api.unsplash.com/search/photos"
 
 CATEGORIES = [
     "정치", "경제", "사회", "생활/문화", "세계", "IT/과학",
@@ -62,7 +64,8 @@ REWRITE_PROMPT = (
     "슬러그: (영어 URL 슬러그. 소문자+하이픈, 3~6단어. 예: korea-ai-startup-investment)\n"
     "요약: (2문장 구어체 요약. 카드 미리보기용)\n"
     "내용: (아래 본문 규칙 적용)\n"
-    f"카테고리: (본문 전체를 쓴 뒤 내용에 맞는 카테고리 1개 선택. 목록: [{_CAT_LIST}])\n\n"
+    f"카테고리: (본문 전체를 쓴 뒤 내용에 맞는 카테고리 1개 선택. 목록: [{_CAT_LIST}])\n"
+    "이미지키워드: (기사 대표 이미지를 검색할 영어 키워드 1~2단어. 예: bitcoin crash, election debate, ai robot)\n\n"
     "=== 제목 규칙 ===\n"
     "- 핵심 키워드를 앞 15자 이내에 배치\n"
     "- 숫자를 반드시 1개 이상 포함 (개수/연도/금액/기간)\n"
@@ -274,7 +277,7 @@ def rewrite_with_gemini(text: str, original_title: str) -> dict | None:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
         payload = {
             "contents": [{"parts": [{"text": f"{REWRITE_PROMPT}\n\n{text}"}]}],
-            "generationConfig": {"maxOutputTokens": 10000, "temperature": 0.9},
+            "generationConfig": {"maxOutputTokens": 40000, "temperature": 0.9},
         }
         try:
             resp = requests.post(url, json=payload, timeout=120)
@@ -283,8 +286,17 @@ def rewrite_with_gemini(text: str, original_title: str) -> dict | None:
                 _gemini_key_index += 1
                 continue
             resp.raise_for_status()
-            result = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-            print(f"[Gemini KEY_{_gemini_key_index+1} 응답]\n{result[:300]}")
+            data = resp.json()
+            candidate = data["candidates"][0]
+            finish_reason = candidate.get("finishReason", "?")
+            usage = data.get("usageMetadata", {})
+            result = candidate["content"]["parts"][0]["text"].strip()
+            print(f"[Gemini KEY_{_gemini_key_index+1} 응답] finishReason={finish_reason} "
+                  f"thoughtsTokens={usage.get('thoughtsTokenCount', '?')} "
+                  f"outputTokens={usage.get('candidatesTokenCount', '?')}")
+            if finish_reason == "MAX_TOKENS":
+                print(f"[경고] 토큰 한도 도달로 응답이 잘렸을 수 있음")
+            print(f"[Gemini KEY_{_gemini_key_index+1} 응답 본문]\n{result[:300]}")
             return _parse_rewrite_result(result, original_title)
         except Exception as exc:
             print(f"[Gemini KEY_{_gemini_key_index+1}] 오류: {exc}")
@@ -303,6 +315,7 @@ def _parse_rewrite_result(result: str, original_title: str) -> dict:
     new_title = None
     new_category = None
     new_slug = None
+    new_image_keyword = None
     summary_text = None
     content_lines = []
     section = None
@@ -314,6 +327,8 @@ def _parse_rewrite_result(result: str, original_title: str) -> dict:
         if section == 'content':
             if re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
                 new_category = re.sub(r"^카\s*테\s*고\s*리\s*[:：]\s*", "", stripped).strip()
+            elif re.match(r"^이\s*미\s*지\s*키\s*워\s*드\s*[:：]", stripped):
+                new_image_keyword = re.sub(r"^이\s*미\s*지\s*키\s*워\s*드\s*[:：]\s*", "", stripped).strip()
             else:
                 content_lines.append(line)
             continue
@@ -323,6 +338,8 @@ def _parse_rewrite_result(result: str, original_title: str) -> dict:
             section = None
         elif re.match(r"^카\s*테\s*고\s*리\s*[:：]", stripped):
             new_category = re.sub(r"^카\s*테\s*고\s*리\s*[:：]\s*", "", stripped).strip()
+        elif re.match(r"^이\s*미\s*지\s*키\s*워\s*드\s*[:：]", stripped):
+            new_image_keyword = re.sub(r"^이\s*미\s*지\s*키\s*워\s*드\s*[:：]\s*", "", stripped).strip()
         elif re.match(r"^슬\s*러\s*그\s*[:：]", stripped):
             raw_slug = re.sub(r"^슬\s*러\s*그\s*[:：]\s*", "", stripped).strip()
             new_slug = re.sub(r"[^a-z0-9-]", "", raw_slug.lower().replace(" ", "-"))
@@ -350,8 +367,50 @@ def _parse_rewrite_result(result: str, original_title: str) -> dict:
     if new_category:
         print(f"[파싱] 카테고리: {new_category}")
 
-    return {"title": new_title, "slug": new_slug, "summary": summary_text, "content": content_html, "category": new_category}
+    return {"title": new_title, "slug": new_slug, "summary": summary_text, "content": content_html, "category": new_category, "image_keyword": new_image_keyword}
 
+
+def search_unsplash_image(keyword: str, title: str) -> str | None:
+    """Unsplash에서 키워드로 이미지 후보를 검색하고, 기사 제목과 가장 관련성 높은 것을 선택.
+    이미지를 다운로드하지 않고 Unsplash가 제공하는 URL을 그대로 반환 (서버 용량 사용 안 함)"""
+    if not UNSPLASH_ACCESS_KEY or not keyword:
+        return None
+    try:
+        resp = requests.get(
+            UNSPLASH_SEARCH_URL,
+            headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
+            params={"query": keyword, "per_page": 10, "orientation": "landscape"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        results = resp.json().get("results", [])
+        if not results:
+            return None
+
+        title_keywords = extract_keywords(title)
+        keyword_words = {w.lower() for w in re.findall(r"[a-zA-Z]+", keyword)}
+
+        best_url = None
+        best_score = -1
+        for photo in results:
+            tags = {t.get("title", "").lower() for t in photo.get("tags", []) if t.get("title")}
+            description = (photo.get("description") or photo.get("alt_description") or "").lower()
+            desc_words = set(re.findall(r"[a-zA-Z]+", description))
+            candidate_words = tags | desc_words
+
+            score = len(candidate_words & keyword_words)
+            for kw in title_keywords:
+                if any(kw.lower() in cw or cw in kw.lower() for cw in candidate_words):
+                    score += 1
+
+            if score > best_score:
+                best_score = score
+                best_url = photo.get("urls", {}).get("regular")
+
+        return best_url
+    except Exception as exc:
+        print(f"[Unsplash 검색 실패] {exc}")
+        return None
 
 
 
@@ -535,7 +594,7 @@ def main():
         else:
             final_category = category
 
-        image_url = None
+        image_url = search_unsplash_image(rewritten.get("image_keyword") or final_category, rewritten["title"])
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
         from datetime import timedelta
