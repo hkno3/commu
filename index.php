@@ -31,13 +31,10 @@ try {
 
 $CAT_SLUG_MAP = [
     'politics' => '정치', 'economy' => '경제', 'society' => '사회',
-    'lifestyle' => '생활_문화', 'world' => '세계', 'tech' => 'IT_과학',
+    'lifestyle' => '생활_문화', 'tech' => 'IT_과학',
     'realestate' => '부동산', 'health' => '헬스_건강', 'sports' => '스포츠',
-    'entertainment' => '연예', 'auto' => '자동차', 'weather' => '날씨',
-    'crypto' => '가상화폐', 'stock' => '주식', 'parenting' => '육아',
-    'travel' => '여행', 'game' => '게임', 'fashion' => '패션_뷰티',
-    'food' => '음식_맛집', 'education' => '교육', 'environment' => '환경',
-    'law' => '법률', 'jobs' => '취업_직장', 'pets' => '반려동물', 'movies' => '영화',
+    'entertainment' => '연예', 'auto' => '자동차',
+    'crypto' => '가상화폐', 'stock' => '주식',
 ];
 $cat_param = $_GET['cat'] ?? '';
 $initial_cat = $CAT_SLUG_MAP[$cat_param] ?? ($cat_param ?: 'all');

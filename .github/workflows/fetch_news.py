@@ -29,10 +29,9 @@ UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
 UNSPLASH_SEARCH_URL = "https://api.unsplash.com/search/photos"
 
 CATEGORIES = [
-    "정치", "경제", "사회", "생활/문화", "세계", "IT/과학",
-    "부동산", "헬스/건강", "스포츠", "연예", "자동차", "날씨",
-    "가상화폐", "주식", "육아", "여행", "게임", "패션/뷰티",
-    "음식/맛집", "교육", "환경", "법률", "취업/직장", "반려동물", "영화",
+    "정치", "경제", "사회", "생활/문화", "IT/과학",
+    "부동산", "헬스/건강", "스포츠", "연예", "자동차",
+    "가상화폐", "주식",
 ]
 
 DATA_DIR = "data"
@@ -42,19 +41,16 @@ MAX_PUBLISHED = 500
 # 카테고리 → ASCII 파일명 (FTP 한글 파일명 문제 해결)
 CAT_FILENAME = {
     "정치": "politics", "경제": "economy", "사회": "society",
-    "생활/문화": "lifestyle", "세계": "world", "IT/과학": "tech",
+    "생활/문화": "lifestyle", "IT/과학": "tech",
     "부동산": "realestate", "헬스/건강": "health", "스포츠": "sports",
-    "연예": "entertainment", "자동차": "auto", "날씨": "weather",
-    "가상화폐": "crypto", "주식": "stock", "육아": "parenting",
-    "여행": "travel", "게임": "game", "패션/뷰티": "fashion",
-    "음식/맛집": "food", "교육": "education", "환경": "environment",
-    "법률": "law", "취업/직장": "jobs", "반려동물": "pets", "영화": "movies",
+    "연예": "entertainment", "자동차": "auto",
+    "가상화폐": "crypto", "주식": "stock",
 }
 
 def cat_to_filename(category: str) -> str:
     return CAT_FILENAME.get(category, category.replace("/", "_"))
 
-_CAT_LIST = "정치, 경제, 사회, 생활/문화, 세계, IT/과학, 부동산, 헬스/건강, 스포츠, 연예, 자동차, 날씨, 가상화폐, 주식, 육아, 여행, 게임, 패션/뷰티, 음식/맛집, 교육, 환경, 법률, 취업/직장, 반려동물, 영화"
+_CAT_LIST = "정치, 경제, 사회, 생활/문화, IT/과학, 부동산, 헬스/건강, 스포츠, 연예, 자동차, 가상화폐, 주식"
 
 REWRITE_PROMPT = (
     "다음 뉴스 기사를 커뮤니티 에디터의 시각으로 재작성해주세요.\n"
