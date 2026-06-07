@@ -161,5 +161,6 @@ $initial_cat = $CAT_SLUG_MAP[$cat_param] ?? ($cat_param ?: 'all');
     <div class="footer-copy">Copyright © 2026 newscommu.com. All rights reserved.</div>
   </div>
 </footer>
+<?php include __DIR__ . '/includes/body_codes.php'; ?>
 </body>
 </html>

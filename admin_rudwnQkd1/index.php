@@ -30,6 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['head_codes']) && ($_S
 }
 $head_codes = file_exists($head_codes_file) ? file_get_contents($head_codes_file) : '';
 
+// ── BODY 코드 저장 (</body> 직전 삽입) ──
+$body_codes_file = DATA_DIR . '/body_codes.txt';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['body_codes']) && ($_SESSION['admin_auth'] ?? false)) {
+    file_put_contents($body_codes_file, $_POST['body_codes']);
+    $body_saved = true;
+}
+$body_codes = file_exists($body_codes_file) ? file_get_contents($body_codes_file) : '';
+
 // ── 기사 수정 ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESSION['admin_auth'] ?? false)) {
     $edit_id      = preg_replace('/[^a-f0-9]/i', '', $_POST['edit_id']);
@@ -267,6 +275,19 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
     <?php endif; ?>
     <form method="POST">
       <textarea name="head_codes" rows="8" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-family:monospace; font-size:13px; resize:vertical;"><?= htmlspecialchars($head_codes) ?></textarea>
+      <button type="submit" style="margin-top:8px; padding:8px 24px; background:#1a73e8; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer;">저장</button>
+    </form>
+  </div>
+
+  <!-- BODY 코드 관리 -->
+  <div style="background:#fff; border-radius:8px; padding:20px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <h2 style="font-size:16px; margin-bottom:12px;">🔧 &lt;/body&gt; 코드 관리</h2>
+    <p style="font-size:12px; color:#888; margin-bottom:10px;">네이버 애널리틱스 등 &lt;/body&gt; 직전 삽입이 필요한 코드를 입력하세요. 모든 페이지의 &lt;/body&gt; 바로 앞에 자동 삽입됩니다.</p>
+    <?php if (isset($body_saved)): ?>
+      <div class="notice">✅ 저장되었습니다.</div>
+    <?php endif; ?>
+    <form method="POST">
+      <textarea name="body_codes" rows="8" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-family:monospace; font-size:13px; resize:vertical;"><?= htmlspecialchars($body_codes) ?></textarea>
       <button type="submit" style="margin-top:8px; padding:8px 24px; background:#1a73e8; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer;">저장</button>
     </form>
   </div>

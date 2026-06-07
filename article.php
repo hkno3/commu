@@ -484,5 +484,6 @@ try {
     }
   });
 </script>
+<?php include __DIR__ . '/includes/body_codes.php'; ?>
 </body>
 </html>
