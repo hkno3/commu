@@ -277,7 +277,7 @@ def rewrite_with_gemini(text: str, original_title: str) -> dict | None:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
         payload = {
             "contents": [{"parts": [{"text": f"{REWRITE_PROMPT}\n\n{text}"}]}],
-            "generationConfig": {"maxOutputTokens": 10000, "temperature": 0.9},
+            "generationConfig": {"maxOutputTokens": 20000, "temperature": 0.9},
         }
         try:
             resp = requests.post(url, json=payload, timeout=120)
@@ -286,8 +286,17 @@ def rewrite_with_gemini(text: str, original_title: str) -> dict | None:
                 _gemini_key_index += 1
                 continue
             resp.raise_for_status()
-            result = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-            print(f"[Gemini KEY_{_gemini_key_index+1} 응답]\n{result[:300]}")
+            data = resp.json()
+            candidate = data["candidates"][0]
+            finish_reason = candidate.get("finishReason", "?")
+            usage = data.get("usageMetadata", {})
+            result = candidate["content"]["parts"][0]["text"].strip()
+            print(f"[Gemini KEY_{_gemini_key_index+1} 응답] finishReason={finish_reason} "
+                  f"thoughtsTokens={usage.get('thoughtsTokenCount', '?')} "
+                  f"outputTokens={usage.get('candidatesTokenCount', '?')}")
+            if finish_reason == "MAX_TOKENS":
+                print(f"[경고] 토큰 한도 도달로 응답이 잘렸을 수 있음")
+            print(f"[Gemini KEY_{_gemini_key_index+1} 응답 본문]\n{result[:300]}")
             return _parse_rewrite_result(result, original_title)
         except Exception as exc:
             print(f"[Gemini KEY_{_gemini_key_index+1}] 오류: {exc}")
