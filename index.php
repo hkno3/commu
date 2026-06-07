@@ -146,7 +146,7 @@ $initial_cat = $CAT_SLUG_MAP[$cat_param] ?? ($cat_param ?: 'all');
 </div>
 
 <script>const INITIAL_CATEGORY = <?= json_encode($initial_cat) ?>;</script>
-<script src="/assets/js/main.js"></script>
+<script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/assets/js/main.js') ?: time() ?>"></script>
 
 <footer class="site-footer">
   <div class="footer-inner">
