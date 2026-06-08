@@ -9,7 +9,9 @@ import json
 import re
 import hashlib
 import requests
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+
+KST = timezone(timedelta(hours=9))
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -283,8 +285,6 @@ def rewrite_with_gemini(text: str, original_title: str) -> dict | None:
         return None
 
     import time
-    from datetime import timedelta
-    KST = timezone(timedelta(hours=9))
     now_kst = datetime.now(KST)
     prompt = REWRITE_PROMPT.format(today=now_kst.strftime("%Y년 %m월 %d일"), year=now_kst.year)
 
@@ -611,7 +611,13 @@ def main():
             dt = datetime.strptime(pub_date, "%a, %d %b %Y %H:%M:%S %z")
             pub_date = dt.isoformat()
         except Exception:
-            pass
+            dt = None
+
+        # 올해 기사만 사용 (예: 지금이 2026년이면 2026년 기사만, 2027년이 되면 2027년 기사만)
+        current_year = datetime.now(KST).year
+        if dt is not None and dt.year != current_year:
+            print(f"    건너뜀 (오래된 기사 {dt.year}년): {title[:40]}")
+            continue
 
         # URL 해시 중복 체크
         if article_id in published["ids"]:
@@ -676,8 +682,6 @@ def main():
         print(f"[이미지 검색 결과] {'찾음 → ' + image_url if image_url else '못 찾음 (image_url=None)'}")
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
-        from datetime import timedelta
-        KST = timezone(timedelta(hours=9))
         now_kst = datetime.now(KST)
         publish_time = now_kst.isoformat()
 
