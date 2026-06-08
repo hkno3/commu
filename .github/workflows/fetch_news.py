@@ -9,7 +9,9 @@ import json
 import re
 import hashlib
 import requests
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+
+KST = timezone(timedelta(hours=9))
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -62,6 +64,10 @@ CAT_IMAGE_FALLBACK = {
 _CAT_LIST = "정치, 경제, 사회, 생활/문화, IT/과학, 부동산, 헬스/건강, 스포츠, 연예, 자동차, 가상화폐, 주식"
 
 REWRITE_PROMPT = (
+    "[현재 시점 안내]\n"
+    "오늘은 {today}입니다. 본문에서 연도나 시점을 언급할 때는 반드시 이 현재 시점을 기준으로 작성하세요.\n"
+    "'2024년', '작년', '내년' 등 학습 시점 기준의 과거/미래 연도를 실제 현재인 것처럼 쓰지 마세요.\n"
+    "기사 원문에 특정 연도가 명시되어 있다면 그 연도를 그대로 사용하되, 막연히 '올해'/'최근'을 언급할 때는 {year}년 기준으로 서술하세요.\n\n"
     "다음 뉴스 기사를 커뮤니티 에디터의 시각으로 재작성해주세요.\n"
     "원문이 짧거나 내용이 부족하면 주제와 관련된 배경지식, 역사적 맥락, 관련 사례를 추가해서 풍부하게 작성하세요.\n\n"
     "반드시 아래 형식 그대로 출력하세요 (마크다운 ** 기호 절대 사용 금지):\n\n"
@@ -279,11 +285,14 @@ def rewrite_with_gemini(text: str, original_title: str) -> dict | None:
         return None
 
     import time
+    now_kst = datetime.now(KST)
+    prompt = REWRITE_PROMPT.format(today=now_kst.strftime("%Y년 %m월 %d일"), year=now_kst.year)
+
     while _gemini_key_index < len(GEMINI_API_KEYS):
         api_key = GEMINI_API_KEYS[_gemini_key_index]
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
         payload = {
-            "contents": [{"parts": [{"text": f"{REWRITE_PROMPT}\n\n{text}"}]}],
+            "contents": [{"parts": [{"text": f"{prompt}\n\n{text}"}]}],
             "generationConfig": {"maxOutputTokens": 40000, "temperature": 0.9},
         }
         retry_done = False
@@ -602,7 +611,13 @@ def main():
             dt = datetime.strptime(pub_date, "%a, %d %b %Y %H:%M:%S %z")
             pub_date = dt.isoformat()
         except Exception:
-            pass
+            dt = None
+
+        # 올해 기사만 사용 (예: 지금이 2026년이면 2026년 기사만, 2027년이 되면 2027년 기사만)
+        current_year = datetime.now(KST).year
+        if dt is not None and dt.year != current_year:
+            print(f"    건너뜀 (오래된 기사 {dt.year}년): {title[:40]}")
+            continue
 
         # URL 해시 중복 체크
         if article_id in published["ids"]:
@@ -667,8 +682,6 @@ def main():
         print(f"[이미지 검색 결과] {'찾음 → ' + image_url if image_url else '못 찾음 (image_url=None)'}")
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
-        from datetime import timedelta
-        KST = timezone(timedelta(hours=9))
         now_kst = datetime.now(KST)
         publish_time = now_kst.isoformat()
 
