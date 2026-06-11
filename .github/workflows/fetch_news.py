@@ -321,7 +321,12 @@ def rewrite_with_gemini(text: str, original_title: str) -> dict | None:
                 candidate = data["candidates"][0]
                 finish_reason = candidate.get("finishReason", "?")
                 usage = data.get("usageMetadata", {})
-                result = candidate["content"]["parts"][0]["text"].strip()
+                # thinking 모드에서는 parts에 {"thought": true, "text": "..."} 같은
+                # 사고 과정 파트가 섞여 들어옴 → thought=true 파트는 제외하고 실제 출력만 사용
+                parts = candidate["content"]["parts"]
+                result = "".join(
+                    p["text"] for p in parts if not p.get("thought", False)
+                ).strip()
                 print(f"[Gemini KEY_{_gemini_key_index+1} 응답] finishReason={finish_reason} "
                       f"thoughtsTokens={usage.get('thoughtsTokenCount', '?')} "
                       f"outputTokens={usage.get('candidatesTokenCount', '?')}")
