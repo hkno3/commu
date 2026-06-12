@@ -151,7 +151,7 @@ if (isset($_GET['del_comment']) && ($_SESSION['admin_auth'] ?? false)) {
 
 $is_auth = $_SESSION['admin_auth'] ?? false;
 
-$all_cats = ["정치","경제","사회","생활/문화","IT/과학","부동산","헬스/건강","스포츠","연예","자동차","가상화폐","주식"];
+$all_cats = ["정치","경제","사회","생활/문화","IT/과학","헬스/건강","스포츠","연예","가상화폐","주식"];
 $cur_cat = $_GET['cat'] ?? '전체';
 $articles = [];
 if ($is_auth) {
