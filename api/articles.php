@@ -23,12 +23,23 @@ $offset   = ($page - 1) * $limit;
 $articles = [];
 
 if ($category !== '' && $category !== 'all') {
-    // Single category
+    // Single category — also load merged legacy categories
+    $merge_map = [
+        '경제'   => ['realestate'], // 부동산 → 경제
+        'IT_과학' => ['auto'],       // 자동차 → IT/과학
+    ];
     $filename = cat_to_filename($category);
-    $path = DATA_DIR . '/' . $filename . '.json';
-    if (file_exists($path)) {
-        $articles = json_decode(file_get_contents($path), true) ?: [];
+    $paths = [DATA_DIR . '/' . $filename . '.json'];
+    foreach ($merge_map[$category] ?? [] as $legacy) {
+        $paths[] = DATA_DIR . '/' . $legacy . '.json';
     }
+    foreach ($paths as $path) {
+        if (file_exists($path)) {
+            $items = json_decode(file_get_contents($path), true) ?: [];
+            $articles = array_merge($articles, $items);
+        }
+    }
+    usort($articles, fn($a, $b) => strcmp($b['pubDate'] ?? $b['pub_date'] ?? '', $a['pubDate'] ?? $a['pub_date'] ?? ''));
 } else {
     // All categories — use latest.json if it exists, else merge
     $latestPath = DATA_DIR . '/latest.json';

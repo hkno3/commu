@@ -32,9 +32,15 @@ UNSPLASH_SEARCH_URL = "https://api.unsplash.com/search/photos"
 
 CATEGORIES = [
     "정치", "경제", "사회", "생활/문화", "IT/과학",
-    "부동산", "헬스/건강", "스포츠", "연예", "자동차",
+    "헬스/건강", "스포츠", "연예",
     "가상화폐", "주식",
 ]
+
+# 통합된 구 카테고리 → 새 카테고리 매핑 (Gemini가 옛 카테고리를 반환할 경우 리매핑)
+CAT_MERGE_MAP = {
+    "부동산": "경제",
+    "자동차": "IT/과학",
+}
 
 DATA_DIR = "data"
 PUBLISHED_FILE = os.path.join(DATA_DIR, "published.json")
@@ -44,8 +50,8 @@ MAX_PUBLISHED = 500
 CAT_FILENAME = {
     "정치": "politics", "경제": "economy", "사회": "society",
     "생활/문화": "lifestyle", "IT/과학": "tech",
-    "부동산": "realestate", "헬스/건강": "health", "스포츠": "sports",
-    "연예": "entertainment", "자동차": "auto",
+    "헬스/건강": "health", "스포츠": "sports",
+    "연예": "entertainment",
     "가상화폐": "crypto", "주식": "stock",
 }
 
@@ -56,12 +62,12 @@ def cat_to_filename(category: str) -> str:
 CAT_IMAGE_FALLBACK = {
     "정치": "politics", "경제": "economy", "사회": "city street",
     "생활/문화": "lifestyle", "IT/과학": "technology",
-    "부동산": "real estate", "헬스/건강": "health", "스포츠": "sports",
-    "연예": "entertainment", "자동차": "car",
+    "헬스/건강": "health", "스포츠": "sports",
+    "연예": "entertainment",
     "가상화폐": "cryptocurrency", "주식": "stock market",
 }
 
-_CAT_LIST = "정치, 경제, 사회, 생활/문화, IT/과학, 부동산, 헬스/건강, 스포츠, 연예, 자동차, 가상화폐, 주식"
+_CAT_LIST = "정치, 경제, 사회, 생활/문화, IT/과학, 헬스/건강, 스포츠, 연예, 가상화폐, 주식"
 
 REWRITE_PROMPT = (
     "[현재 시점 안내]\n"
@@ -659,10 +665,12 @@ def main():
 
         # Gemini가 분류한 카테고리가 유효하면 사용, 아니면 검색 카테고리 유지
         claude_cat = rewritten.get("category", "")
+        # 통합된 구 카테고리는 새 카테고리로 리매핑
+        claude_cat = CAT_MERGE_MAP.get(claude_cat, claude_cat)
         if claude_cat and claude_cat in CATEGORIES:
             final_category = claude_cat
         else:
-            final_category = category
+            final_category = CAT_MERGE_MAP.get(category, category)
 
         image_search_keyword = rewritten.get("image_keyword") or final_category
         print(f"[이미지 검색] 키워드: '{image_search_keyword}' (Gemini 추출: '{rewritten.get('image_keyword')}')")

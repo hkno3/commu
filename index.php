@@ -32,8 +32,8 @@ try {
 $CAT_SLUG_MAP = [
     'politics' => '정치', 'economy' => '경제', 'society' => '사회',
     'lifestyle' => '생활_문화', 'tech' => 'IT_과학',
-    'realestate' => '부동산', 'health' => '헬스_건강', 'sports' => '스포츠',
-    'entertainment' => '연예', 'auto' => '자동차',
+    'health' => '헬스_건강', 'sports' => '스포츠',
+    'entertainment' => '연예',
     'crypto' => '가상화폐', 'stock' => '주식',
 ];
 $cat_param = $_GET['cat'] ?? '';
