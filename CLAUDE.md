@@ -66,6 +66,171 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
+## Examples
+
+Real-world code examples demonstrating the four principles.
+
+---
+
+### 1. Think Before Coding
+
+#### Example 1: Hidden Assumptions
+
+**User Request:** "Add a feature to export user data"
+
+**❌ What LLMs Do (Wrong Assumptions)**
+
+```python
+def export_users(format='json'):
+    """Export all users to a file."""
+    users = User.query.all()
+    
+    if format == 'json':
+        with open('users.json', 'w') as f:
+            json.dump([u.to_dict() for u in users], f)
+    elif format == 'csv':
+        with open('users.csv', 'w') as f:
+            writer = csv.DictWriter(f, fieldnames=['id', 'email', 'name'])
+            writer.writeheader()
+            writer.writerows([u.to_dict() for u in users])
+    
+    return f"Exported {len(users)} users"
+```
+
+**Problems:**
+- Assumed it should export ALL users (what about pagination? privacy?)
+- Assumed file location without asking
+- Assumed which fields to include
+
+**✅ What Should Happen (Surface Assumptions)**
+
+```
+Before implementing, I need to clarify:
+
+1. Scope: Export all users or filtered subset?
+2. Format: Download file in browser? API endpoint? Background job?
+3. Fields: Which user fields? (some might be sensitive)
+
+Simplest approach: Add an API endpoint that returns paginated JSON.
+What's your preference?
+```
+
+#### Example 2: Multiple Interpretations
+
+**User Request:** "Make the search faster"
+
+**❌ What LLMs Do:** Adds caching, indexes, async — without asking which "faster" matters.
+
+**✅ What Should Happen**
+
+```
+"Make the search faster" could mean:
+
+1. Faster response time (< 100ms) → database indexes, caching
+2. Handle more concurrent searches → async/await, connection pooling
+3. Faster perceived speed (UX) → show partial results, progressive loading
+
+Which aspect matters most?
+```
+
+---
+
+### 2. Simplicity First
+
+#### Example 1: Over-abstraction
+
+**User Request:** "Add a function to calculate discount"
+
+**❌ What LLMs Do:** Strategy pattern, abstract base class, dataclass config — 60+ lines for a simple calculation.
+
+**✅ What Should Happen**
+
+```python
+def calculate_discount(amount: float, percent: float) -> float:
+    return amount * (percent / 100)
+```
+
+#### Example 2: Speculative Features
+
+**User Request:** "Save user preferences to database"
+
+**❌ What LLMs Do:** Adds caching, validation, merge logic, notifications — nobody asked for any of it.
+
+**✅ What Should Happen**
+
+```python
+def save_preferences(db, user_id: int, preferences: dict):
+    db.execute(
+        "UPDATE users SET preferences = ? WHERE id = ?",
+        (json.dumps(preferences), user_id)
+    )
+```
+
+---
+
+### 3. Surgical Changes
+
+#### Example 1: Drive-by Refactoring
+
+**User Request:** "Fix the bug where empty emails crash the validator"
+
+**❌ What LLMs Do:** Also "improves" email validation, adds username validation, changes comments, adds docstring.
+
+**✅ What Should Happen:** Only change the specific lines that fix empty email handling. Nothing else.
+
+#### Example 2: Style Drift
+
+**User Request:** "Add logging to the upload function"
+
+**❌ What LLMs Do:** Changes quote style, adds type hints, adds docstring, reformats whitespace.
+
+**✅ What Should Happen:** Add logger lines only. Match existing single quotes, no type hints, keep existing style.
+
+---
+
+### 4. Goal-Driven Execution
+
+#### Example 1: Multi-Step with Verification
+
+**User Request:** "Add rate limiting to the API"
+
+**✅ What Should Happen**
+
+```
+Plan:
+1. Add basic in-memory rate limiting (single endpoint)
+   Verify: 100 requests → first 10 succeed, rest get 429
+
+2. Extract to middleware (apply to all endpoints)
+   Verify: Existing endpoint tests still pass
+
+3. Add Redis backend (for multi-server)
+   Verify: Rate limit persists across app restarts
+
+Start with step 1?
+```
+
+#### Example 2: Test-First Verification
+
+**User Request:** "The sorting breaks when there are duplicate scores"
+
+**✅ What Should Happen:** Write a test that reproduces the bug first. Confirm it fails. Then fix. Confirm it passes.
+
+---
+
+## Anti-Patterns Summary
+
+| Principle | Anti-Pattern | Fix |
+|-----------|-------------|-----|
+| Think Before Coding | Silently assumes file format, fields, scope | List assumptions explicitly, ask for clarification |
+| Simplicity First | Strategy pattern for single discount calculation | One function until complexity is actually needed |
+| Surgical Changes | Reformats quotes, adds type hints while fixing bug | Only change lines that fix the reported issue |
+| Goal-Driven | "I'll review and improve the code" | "Write test for bug X → make it pass → verify no regressions" |
+
+**Good code is code that solves today's problem simply, not tomorrow's problem prematurely.**
+
+---
+
 ## 프로젝트 정보 (newscommu.com)
 
 - PHP 뉴스 커뮤니티 사이트, FastComet 공유호스팅 FTP 배포
