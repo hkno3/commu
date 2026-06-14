@@ -32,14 +32,17 @@ UNSPLASH_SEARCH_URL = "https://api.unsplash.com/search/photos"
 
 CATEGORIES = [
     "정치", "경제", "사회", "생활/문화", "IT/과학",
-    "헬스/건강", "스포츠", "연예",
-    "가상화폐", "주식",
 ]
 
 # 통합된 구 카테고리 → 새 카테고리 매핑 (Gemini가 옛 카테고리를 반환할 경우 리매핑)
 CAT_MERGE_MAP = {
     "부동산": "경제",
     "자동차": "IT/과학",
+    "가상화폐": "경제",
+    "주식": "경제",
+    "헬스/건강": "생활/문화",
+    "스포츠": "생활/문화",
+    "연예": "생활/문화",
 }
 
 DATA_DIR = "data"
@@ -50,9 +53,6 @@ MAX_PUBLISHED = 500
 CAT_FILENAME = {
     "정치": "politics", "경제": "economy", "사회": "society",
     "생활/문화": "lifestyle", "IT/과학": "tech",
-    "헬스/건강": "health", "스포츠": "sports",
-    "연예": "entertainment",
-    "가상화폐": "crypto", "주식": "stock",
 }
 
 def cat_to_filename(category: str) -> str:
@@ -62,12 +62,9 @@ def cat_to_filename(category: str) -> str:
 CAT_IMAGE_FALLBACK = {
     "정치": "politics", "경제": "economy", "사회": "city street",
     "생활/문화": "lifestyle", "IT/과학": "technology",
-    "헬스/건강": "health", "스포츠": "sports",
-    "연예": "entertainment",
-    "가상화폐": "cryptocurrency", "주식": "stock market",
 }
 
-_CAT_LIST = "정치, 경제, 사회, 생활/문화, IT/과학, 헬스/건강, 스포츠, 연예, 가상화폐, 주식"
+_CAT_LIST = "정치, 경제, 사회, 생활/문화, IT/과학"
 
 REWRITE_PROMPT = (
     "[현재 시점 안내]\n"
