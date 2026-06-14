@@ -14,11 +14,6 @@ $CATEGORIES = [
     '사회'      => ['label' => '사회',     'color' => '#2980b9', 'bg' => '#f0f4ff'],
     '생활_문화' => ['label' => '생활/문화','color' => '#e67e22', 'bg' => '#fff8f0'],
     'IT_과학'   => ['label' => 'IT/과학',  'color' => '#16a085', 'bg' => '#f0fffe'],
-    '헬스_건강' => ['label' => '헬스/건강','color' => '#1abc9c', 'bg' => '#f0fff8'],
-    '스포츠'    => ['label' => '스포츠',   'color' => '#2471a3', 'bg' => '#f0f8ff'],
-    '연예'      => ['label' => '연예',     'color' => '#c0392b', 'bg' => '#fff0fb'],
-    '가상화폐'  => ['label' => '가상화폐', 'color' => '#f39c12', 'bg' => '#fff8e1'],
-    '주식'      => ['label' => '주식',     'color' => '#27ae60', 'bg' => '#f1f8e9'],
 ];
 
 // Normalise incoming param (/ → _)

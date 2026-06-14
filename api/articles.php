@@ -25,8 +25,9 @@ $articles = [];
 if ($category !== '' && $category !== 'all') {
     // Single category — also load merged legacy categories
     $merge_map = [
-        '경제'   => ['realestate'], // 부동산 → 경제
-        'IT_과학' => ['auto'],       // 자동차 → IT/과학
+        '경제'    => ['realestate', 'crypto', 'stock'],   // 부동산·가상화폐·주식 → 경제
+        'IT_과학' => ['auto'],                             // 자동차 → IT/과학
+        '생활_문화' => ['health', 'sports', 'entertainment'], // 헬스·스포츠·연예 → 생활/문화
     ];
     $filename = cat_to_filename($category);
     $paths = [DATA_DIR . '/' . $filename . '.json'];
