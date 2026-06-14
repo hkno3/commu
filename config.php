@@ -54,6 +54,7 @@ function cat_to_filename(string $cat): string {
         '교육'=>'education','환경'=>'environment','법률'=>'law',
         '취업/직장'=>'jobs','취업_직장'=>'jobs',
         '반려동물'=>'pets','영화'=>'movies',
+        '천천히 늙자'=>'animal','천천히_늙자'=>'animal',
     ];
     return $map[$cat] ?? str_replace('/', '_', $cat);
 }

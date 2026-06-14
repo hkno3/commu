@@ -1,0 +1,74 @@
+name: Fetch Animal Papers and Deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          pip install requests
+
+      - name: Download data files from server
+        run: |
+          python - <<'EOF'
+          import ftplib, os
+
+          HOST = "ftp.bizachieve.com"
+          USER = "newscommu@newscommu.com"
+          PASS = "${{ secrets.FTP_PASSWORD }}"
+
+          os.makedirs("data", exist_ok=True)
+
+          try:
+              ftp = ftplib.FTP(HOST)
+              ftp.login(USER, PASS)
+              for f in ["data/published_animal.json", "data/animal.json", "data/latest.json"]:
+                  try:
+                      with open(f, "wb") as fp:
+                          ftp.retrbinary(f"RETR {f}", fp.write)
+                      print(f"Downloaded: {f}")
+                  except Exception as e:
+                      print(f"Skip {f}: {e}")
+              ftp.quit()
+          except Exception as e:
+              print(f"FTP error: {e}")
+          EOF
+
+      - name: Fetch PubMed papers and rewrite
+        env:
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          PUBMED_API_KEY: ${{ secrets.PUBMED_API_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        run: |
+          python .github/workflows/fetch_animal.py
+
+      - name: Deploy to FastComet via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ftp.bizachieve.com
+          username: newscommu@newscommu.com
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: /
+          local-dir: ./
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/__pycache__/**
+            .github/workflows/fetch_animal.py
+            .github/workflows/fetch_news.py
+            .github/workflows/fetch_weekly.py
+            README.md
+            assets/images/favicon.png

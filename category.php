@@ -12,8 +12,9 @@ $CATEGORIES = [
     '정치'      => ['label' => '정치',     'color' => '#c0392b', 'bg' => '#fff0f0'],
     '경제'      => ['label' => '경제',     'color' => '#27ae60', 'bg' => '#f0fff4'],
     '사회'      => ['label' => '사회',     'color' => '#2980b9', 'bg' => '#f0f4ff'],
-    '생활_문화' => ['label' => '생활/문화','color' => '#e67e22', 'bg' => '#fff8f0'],
-    'IT_과학'   => ['label' => 'IT/과학',  'color' => '#16a085', 'bg' => '#f0fffe'],
+    '생활_문화'  => ['label' => '생활/문화', 'color' => '#e67e22', 'bg' => '#fff8f0'],
+    'IT_과학'    => ['label' => 'IT/과학',   'color' => '#16a085', 'bg' => '#f0fffe'],
+    '천천히_늙자' => ['label' => '천천히 늙자','color' => '#7b5ea7', 'bg' => '#f8f0ff'],
 ];
 
 // Normalise incoming param (/ → _)
