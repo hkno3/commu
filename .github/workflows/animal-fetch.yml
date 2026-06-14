@@ -84,36 +84,3 @@ jobs:
             assets/images/favicon.png
             rss.xml
             sitemap.xml
-
-      - name: Save article to DB via API (after FTP deploy)
-        env:
-          SAVE_SECRET: ${{ secrets.SAVE_SECRET }}
-        run: |
-          python - <<'EOF'
-          import json, os, requests, time
-
-          path = "/tmp/animal_new_article.json"
-          if not os.path.exists(path):
-              print("DB 저장 대상 없음 (새 글 없음)")
-              exit(0)
-
-          with open(path, encoding="utf-8") as f:
-              article = json.load(f)
-
-          SAVE_SECRET = os.environ.get("SAVE_SECRET", "")
-          SAVE_API_URL = "https://newscommu.com/api/save_article.php"
-
-          try:
-              r = requests.post(
-                  SAVE_API_URL,
-                  json=article,
-                  headers={"X-Save-Secret": SAVE_SECRET, "Content-Type": "application/json"},
-                  timeout=15,
-              )
-              if r.status_code == 200:
-                  print(f"  [DB] 저장 완료: {article.get('article_id','')[:20]}")
-              else:
-                  print(f"  [DB] 저장 실패: {r.status_code} {r.text[:200]}")
-          except Exception as e:
-              print(f"  [DB] 저장 실패 (무시): {e}")
-          EOF

@@ -432,12 +432,8 @@ def main():
         save_published(published)
         return
 
-    # DB 저장용 임시 파일 저장 (FTP 배포 후 yml에서 호출)
-    try:
-        with open("/tmp/animal_new_article.json", "w", encoding="utf-8") as f:
-            json.dump(new_article, f, ensure_ascii=False)
-    except Exception:
-        pass
+    # DB 저장
+    save_article_to_db(new_article)
 
     # 카테고리 파일 업데이트
     existing = load_category_articles()
