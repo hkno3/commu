@@ -9,7 +9,7 @@ import json
 import re
 import hashlib
 import requests
-import mysql.connector
+
 from datetime import datetime, timezone, timedelta
 
 KST = timezone(timedelta(hours=9))
@@ -60,50 +60,21 @@ def cat_to_filename(category: str) -> str:
     return CAT_FILENAME.get(category, category.replace("/", "_"))
 
 
-DB_CONFIG = {
-    "host":     os.environ.get("DB_HOST", "localhost"),
-    "database": os.environ.get("DB_NAME", "bizachie_newscommu"),
-    "user":     os.environ.get("DB_USER", "bizachie_nc"),
-    "password": os.environ.get("DB_PASS", ""),
-    "charset":  "utf8mb4",
-}
+SAVE_SECRET = os.environ.get("SAVE_SECRET", "nc_save_s3cr3t_2026")
+SAVE_API_URL = "https://newscommu.com/api/save_article.php"
 
 def save_article_to_db(article: dict) -> None:
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
-        cur = conn.cursor()
-        pub = article.get("pubDate") or article.get("pub_date") or ""
-        try:
-            pub_dt = datetime.fromisoformat(pub).strftime("%Y-%m-%d %H:%M:%S")
-        except Exception:
-            pub_dt = None
-        cur.execute("""
-            INSERT INTO article_cache
-                (article_id, title, summary, content, image_url, original_url,
-                 source, category, category_label, article_type, pub_date)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-            ON DUPLICATE KEY UPDATE
-                title=VALUES(title), summary=VALUES(summary),
-                content=VALUES(content), image_url=VALUES(image_url),
-                category=VALUES(category), category_label=VALUES(category_label),
-                pub_date=VALUES(pub_date)
-        """, (
-            article.get("article_id", ""),
-            article.get("title", "")[:500],
-            article.get("summary", ""),
-            article.get("content", ""),
-            article.get("image_url", "")[:2048],
-            (article.get("original_url") or article.get("url", ""))[:2048],
-            article.get("source", ""),
-            article.get("category", ""),
-            article.get("category_label", ""),
-            article.get("article_type", "news"),
-            pub_dt,
-        ))
-        conn.commit()
-        cur.close()
-        conn.close()
-        print(f"  [DB] 저장 완료: {article.get('article_id','')[:20]}")
+        r = requests.post(
+            SAVE_API_URL,
+            json=article,
+            headers={"X-Save-Secret": SAVE_SECRET},
+            timeout=15,
+        )
+        if r.status_code == 200:
+            print(f"  [DB] 저장 완료: {article.get('article_id','')[:20]}")
+        else:
+            print(f"  [DB] 저장 실패: {r.status_code} {r.text[:100]}")
     except Exception as e:
         print(f"  [DB] 저장 실패 (무시): {e}")
 

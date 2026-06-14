@@ -22,6 +22,11 @@ define('SITE_URL', 'https://newscommu.com');
 define('DATA_DIR', __DIR__ . '/data');
 
 // ---------------------------------------------------------------------------
+// Internal API secret (for GitHub Actions → DB save)
+// ---------------------------------------------------------------------------
+define('SAVE_SECRET', getenv('SAVE_SECRET') ?: 'nc_save_s3cr3t_2026');
+
+// ---------------------------------------------------------------------------
 // AdSense
 // ---------------------------------------------------------------------------
 define('ADSENSE_PUBLISHER_ID', 'ca-pub-XXXXXXXXXXXXXXXXX'); // Replace with your ID
