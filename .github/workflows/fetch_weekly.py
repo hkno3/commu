@@ -15,6 +15,8 @@ KST = timezone(timedelta(hours=9))
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY_3", "")
 UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
+SAVE_SECRET = os.environ.get("SAVE_SECRET", "nc_save_s3cr3t_2026")
+SAVE_API_URL = "https://newscommu.com/api/save_article.php"
 
 DATA_DIR = "data"
 ANIMAL_FILE  = os.path.join(DATA_DIR, "animal.json")
@@ -263,6 +265,21 @@ def main():
     animal.insert(0, article)
     animal = animal[:200]
     save_json(os.path.join(DATA_DIR, "animal.json"), animal)
+
+    # DB 저장
+    try:
+        r = requests.post(
+            SAVE_API_URL,
+            json=article,
+            headers={"X-Save-Secret": SAVE_SECRET, "Content-Type": "application/json"},
+            timeout=15,
+        )
+        if r.status_code == 200:
+            print(f"  [DB] 저장 완료: {article_id[:20]}")
+        else:
+            print(f"  [DB] 저장 실패: {r.status_code}")
+    except Exception as e:
+        print(f"  [DB] 저장 실패 (무시): {e}")
 
     print("완료!")
 
