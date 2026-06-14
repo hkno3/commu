@@ -1,6 +1,5 @@
 User-agent: *
 Allow: /
-Disallow: /admin_rudwnQkd1/
 Disallow: /api/
 Disallow: /db/
 Disallow: /data/
