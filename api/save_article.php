@@ -4,18 +4,18 @@
  * Called by GitHub Actions after FTP deploy to persist articles to DB
  */
 
-// Simple secret key auth
-$secret = $_SERVER['HTTP_X_SAVE_SECRET'] ?? '';
-if ($secret !== (defined('SAVE_SECRET') ? SAVE_SECRET : '')) {
-    http_response_code(403);
-    echo json_encode(['error' => 'forbidden']);
-    exit;
-}
-
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db/init.php';
 
 header('Content-Type: application/json; charset=utf-8');
+
+// Simple secret key auth
+$secret = $_SERVER['HTTP_X_SAVE_SECRET'] ?? '';
+if ($secret !== SAVE_SECRET) {
+    http_response_code(403);
+    echo json_encode(['error' => 'forbidden']);
+    exit;
+}
 
 $body = file_get_contents('php://input');
 $article = json_decode($body, true);
