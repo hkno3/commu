@@ -34,13 +34,22 @@ jobs:
           try:
               ftp = ftplib.FTP(HOST)
               ftp.login(USER, PASS)
-              for f in ["data/published_animal.json", "data/animal.json", "data/latest.json"]:
-                  try:
-                      with open(f, "wb") as fp:
-                          ftp.retrbinary(f"RETR {f}", fp.write)
-                      print(f"Downloaded: {f}")
-                  except Exception as e:
-                      print(f"Skip {f}: {e}")
+              # Download all data/*.json files to preserve existing category files
+              try:
+                  ftp.cwd("data")
+                  files = ftp.nlst()
+                  ftp.cwd("..")
+                  for fname in files:
+                      if fname.endswith(".json"):
+                          local = f"data/{fname}"
+                          try:
+                              with open(local, "wb") as fp:
+                                  ftp.retrbinary(f"RETR data/{fname}", fp.write)
+                              print(f"Downloaded: {local}")
+                          except Exception as e:
+                              print(f"Skip {local}: {e}")
+              except Exception as e:
+                  print(f"data dir error: {e}")
               ftp.quit()
           except Exception as e:
               print(f"FTP error: {e}")
