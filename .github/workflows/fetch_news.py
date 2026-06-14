@@ -68,7 +68,7 @@ def save_article_to_db(article: dict) -> None:
         r = requests.post(
             SAVE_API_URL,
             json=article,
-            headers={"X-Save-Secret": SAVE_SECRET},
+            headers={"X-Save-Secret": SAVE_SECRET, "Content-Type": "application/json"},
             timeout=15,
         )
         if r.status_code == 200:
