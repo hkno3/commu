@@ -57,7 +57,7 @@ function buildCategoryNav() {
 
 const CAT_SLUG = {
   '정치':'politics','경제':'economy','사회':'society','생활_문화':'lifestyle',
-  'IT_과학':'tech',
+  'IT_과학':'tech','천천히_늙자':'animal',
 };
 
 function switchCategory(cat, btnEl) {
