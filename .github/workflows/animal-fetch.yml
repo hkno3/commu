@@ -82,3 +82,5 @@ jobs:
             .github/workflows/fetch_weekly.py
             README.md
             assets/images/favicon.png
+            rss.xml
+            sitemap.xml
