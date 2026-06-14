@@ -9,6 +9,7 @@ import json
 import re
 import hashlib
 import requests
+import mysql.connector
 from datetime import datetime, timezone, timedelta
 
 KST = timezone(timedelta(hours=9))
@@ -80,6 +81,58 @@ REWRITE_PROMPT = """[현재 시점 안내]
 - 에디터가 직접 읽고 감동받은 것처럼 따뜻하게
 - 반려인의 마음을 공감하는 톤 유지
 """
+
+# ---------------------------------------------------------------------------
+# DB
+# ---------------------------------------------------------------------------
+
+DB_CONFIG = {
+    "host":     os.environ.get("DB_HOST", "localhost"),
+    "database": os.environ.get("DB_NAME", "bizachie_newscommu"),
+    "user":     os.environ.get("DB_USER", "bizachie_nc"),
+    "password": os.environ.get("DB_PASS", ""),
+    "charset":  "utf8mb4",
+}
+
+def save_article_to_db(article: dict) -> None:
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        pub = article.get("pubDate") or article.get("pub_date") or ""
+        try:
+            pub_dt = datetime.fromisoformat(pub).strftime("%Y-%m-%d %H:%M:%S")
+        except Exception:
+            pub_dt = None
+        cur.execute("""
+            INSERT INTO article_cache
+                (article_id, title, summary, content, image_url, original_url,
+                 source, category, category_label, article_type, pub_date)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON DUPLICATE KEY UPDATE
+                title=VALUES(title), summary=VALUES(summary),
+                content=VALUES(content), image_url=VALUES(image_url),
+                category=VALUES(category), category_label=VALUES(category_label),
+                pub_date=VALUES(pub_date)
+        """, (
+            article.get("article_id", ""),
+            article.get("title", "")[:500],
+            article.get("summary", ""),
+            article.get("content", ""),
+            article.get("image_url", "")[:2048],
+            (article.get("original_url") or article.get("url", ""))[:2048],
+            article.get("source", ""),
+            article.get("category", ""),
+            article.get("category_label", ""),
+            article.get("article_type", "paper"),
+            pub_dt,
+        ))
+        conn.commit()
+        cur.close()
+        conn.close()
+        print(f"  [DB] 저장 완료: {article.get('article_id','')[:20]}")
+    except Exception as e:
+        print(f"  [DB] 저장 실패 (무시): {e}")
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -407,6 +460,9 @@ def main():
         print("[!] 발행할 새 논문 없음")
         save_published(published)
         return
+
+    # DB 저장
+    save_article_to_db(new_article)
 
     # 카테고리 파일 업데이트
     existing = load_category_articles()

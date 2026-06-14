@@ -18,7 +18,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install requests
+          pip install requests mysql-connector-python
 
       - name: Download data files from server
         run: |
@@ -71,6 +71,10 @@ jobs:
           GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
           GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
         run: |
           python .github/workflows/fetch_news.py
 
