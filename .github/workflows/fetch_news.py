@@ -658,9 +658,6 @@ def main():
         print(f"[+] 새 기사: {title[:50]}")
         rewritten = rewrite_with_gemini(f"{title}\n{description}", title)
         if rewritten is None:
-            if _gemini_key_index >= len(GEMINI_API_KEYS):
-                print("[*] Gemini 키 모두 소진, 이번 실행 종료")
-                break
             print("[*] Gemini 응답 실패, 이번 기사 건너뜀")
             continue
 
