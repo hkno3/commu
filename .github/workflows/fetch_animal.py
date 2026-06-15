@@ -231,7 +231,7 @@ PubMed ID: {paper['pmid']}
 
     payload = {
         "contents": [{"parts": [{"text": f"{prompt}\n\n{text}"}]}],
-        "generationConfig": {"maxOutputTokens": 8000, "temperature": 0.9},
+        "generationConfig": {"maxOutputTokens": 40000, "temperature": 0.9},
     }
 
     import time

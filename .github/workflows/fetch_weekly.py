@@ -162,7 +162,7 @@ def generate_weekly_proposal(posts: list) -> dict | None:
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": 1.0,
-            "maxOutputTokens": 4096,
+            "maxOutputTokens": 40000,
             "thinkingConfig": {"thinkingBudget": 8000},
         },
     }
