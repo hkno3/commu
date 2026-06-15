@@ -8,7 +8,7 @@ $rss_biz     = fetch_rss('https://bizachieve.com/feed/', 'biz');
 
 // slug 또는 id로 조회
 $lookup_slug = preg_replace('/[^a-z0-9-]/', '', strtolower(trim($_GET['slug'] ?? '')));
-$article_id  = preg_replace('/[^a-f0-9]/i', '', trim($_GET['id'] ?? ''));
+$article_id  = preg_replace('/[^a-z0-9_]/i', '', trim($_GET['id'] ?? ''));
 
 if ($lookup_slug === '' && $article_id === '') {
     header('Location: /');
