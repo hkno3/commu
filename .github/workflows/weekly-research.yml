@@ -18,7 +18,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install requests
+          pip install requests markdown
 
       - name: Download data files from server
         run: |
