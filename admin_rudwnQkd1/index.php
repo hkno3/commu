@@ -40,7 +40,7 @@ $body_codes = file_exists($body_codes_file) ? file_get_contents($body_codes_file
 
 // ── 기사 수정 ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESSION['admin_auth'] ?? false)) {
-    $edit_id      = preg_replace('/[^a-f0-9]/i', '', $_POST['edit_id']);
+    $edit_id      = preg_replace('/[^a-z0-9_]/i', '', $_POST['edit_id']);
     $old_cat      = trim($_POST['old_cat'] ?? '');
     $new_cat      = trim($_POST['new_cat'] ?? '');
     $new_title    = trim($_POST['new_title'] ?? '');
@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
 
 // ── 기사 삭제 ──
 if (isset($_GET['delete']) && ($_SESSION['admin_auth'] ?? false)) {
-    $del_id  = preg_replace('/[^a-f0-9]/i', '', $_GET['delete']);
+    $del_id  = preg_replace('/[^a-z0-9_]/i', '', $_GET['delete']);
     $del_cat = preg_replace('/[^a-zA-Z_\/가-힣]/', '', $_GET['cat'] ?? '');
     $del_error = '';
     if ($del_id && $del_cat) {
