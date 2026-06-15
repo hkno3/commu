@@ -62,7 +62,7 @@ if (!$article) {
         require_once __DIR__ . '/db/init.php';
         $pdo = db_connect();
         $stmt = $pdo->prepare(
-            "SELECT article_id, title, summary, url, source, category, pub_date
+            "SELECT article_id, title, summary, content, image_url, url, source, category, pub_date
              FROM article_cache WHERE article_id = ? LIMIT 1"
         );
         $stmt->execute([$article_id]);
@@ -72,6 +72,8 @@ if (!$article) {
                 'article_id'   => $row['article_id'],
                 'title'        => $row['title'],
                 'summary'      => $row['summary'],
+                'content'      => $row['content'],
+                'image_url'    => $row['image_url'],
                 'original_url' => $row['url'],
                 'source'       => $row['source'],
                 'category'     => $row['category'],
