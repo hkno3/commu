@@ -235,6 +235,7 @@ def main():
     article = {
         "article_id":   article_id,
         "title":        f"🔬 {title}",
+        "summary":      f"이번 주 동물 노화·수명 연구 {len(posts)}편을 종합 분석한 주간 연구 기획서입니다. {title}",
         "content":      content,
         "image_url":    image_url,
         "category":     "천천히_늙자",
