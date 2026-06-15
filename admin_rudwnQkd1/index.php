@@ -429,7 +429,7 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
       <label>카테고리</label>
       <select name="new_cat" id="ef-cat">
         <?php foreach ($all_cats as $c): ?>
-          <option value="<?= htmlspecialchars(str_replace('/', '_', $c)) ?>"><?= htmlspecialchars($c) ?></option>
+          <option value="<?= htmlspecialchars(str_replace(['/','  ',' '], ['_','_','_'], $c)) ?>"><?= htmlspecialchars($c) ?></option>
         <?php endforeach; ?>
       </select>
       <input type="hidden" name="new_cat_label" id="ef-cat-label">
@@ -443,7 +443,7 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
 
 <script>
 const ALL_CATS = <?= json_encode(array_combine(
-  array_map(fn($c) => str_replace('/', '_', $c), $all_cats),
+  array_map(fn($c) => str_replace(['/','  ',' '], ['_','_','_'], $c), $all_cats),
   $all_cats
 )) ?>;
 
