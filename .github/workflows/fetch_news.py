@@ -300,11 +300,8 @@ def fetch_naver_news(query: str, display: int = 20) -> list:
         return []
 
 
-_gemini_key_index = 0  # 현재 사용 중인 Gemini 키 인덱스
-
 def rewrite_with_gemini(text: str, original_title: str) -> dict | None:
-    """Gemini로 재작성. 할당량 초과(429) 시 다음 키로 전환, 일시적 오류(503 등)는 같은 키로 재시도. 모두 소진 시 None 반환."""
-    global _gemini_key_index
+    """Gemini KEY_1로만 재작성. 실패 시 None 반환 (다른 키로 폴백 없음)."""
     if not GEMINI_API_KEYS:
         return None
 
@@ -312,65 +309,51 @@ def rewrite_with_gemini(text: str, original_title: str) -> dict | None:
     now_kst = datetime.now(KST)
     prompt = REWRITE_PROMPT.format(today=now_kst.strftime("%Y년 %m월 %d일"), year=now_kst.year)
 
-    while _gemini_key_index < len(GEMINI_API_KEYS):
-        api_key = GEMINI_API_KEYS[_gemini_key_index]
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-        payload = {
-            "contents": [{"parts": [{"text": f"{prompt}\n\n{text}"}]}],
-            "generationConfig": {"maxOutputTokens": 40000, "temperature": 0.9},
-        }
-        retry_done = False
-        for attempt in range(2):
-            try:
-                resp = requests.post(url, json=payload, timeout=120)
-                if resp.status_code == 429:
-                    print(f"[Gemini KEY_{_gemini_key_index+1}] 할당량 초과, 다음 키로 전환")
-                    _gemini_key_index += 1
-                    retry_done = True
-                    break
-                if resp.status_code in (401, 403):
-                    print(f"[Gemini KEY_{_gemini_key_index+1}] 키 인증 오류({resp.status_code}), 다음 키로 전환")
-                    _gemini_key_index += 1
-                    retry_done = True
-                    break
-                if resp.status_code in (500, 502, 503, 504):
-                    if attempt == 0:
-                        print(f"[Gemini KEY_{_gemini_key_index+1}] 일시적 서버 오류({resp.status_code}), 같은 키로 재시도")
-                        time.sleep(5)
-                        continue
-                    print(f"[Gemini KEY_{_gemini_key_index+1}] 일시적 서버 오류({resp.status_code}) 재시도 실패, 이번 기사 건너뜀")
-                    return None
-                resp.raise_for_status()
-                data = resp.json()
-                candidate = data["candidates"][0]
-                finish_reason = candidate.get("finishReason", "?")
-                usage = data.get("usageMetadata", {})
-                # thinking 모드에서는 parts에 {"thought": true, "text": "..."} 같은
-                # 사고 과정 파트가 섞여 들어옴 → thought=true 파트는 제외하고 실제 출력만 사용
-                parts = candidate["content"]["parts"]
-                result = "".join(
-                    p["text"] for p in parts if not p.get("thought", False)
-                ).strip()
-                print(f"[Gemini KEY_{_gemini_key_index+1} 응답] finishReason={finish_reason} "
-                      f"thoughtsTokens={usage.get('thoughtsTokenCount', '?')} "
-                      f"outputTokens={usage.get('candidatesTokenCount', '?')}")
-                if finish_reason == "MAX_TOKENS":
-                    print(f"[경고] 토큰 한도 도달로 응답이 잘렸을 수 있음")
-                print(f"[Gemini KEY_{_gemini_key_index+1} 응답 본문]\n{result[:300]}")
-                return _parse_rewrite_result(result, original_title)
-            except Exception as exc:
+    api_key = GEMINI_API_KEYS[0]  # KEY_1만 사용
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    payload = {
+        "contents": [{"parts": [{"text": f"{prompt}\n\n{text}"}]}],
+        "generationConfig": {"maxOutputTokens": 40000, "temperature": 0.9},
+    }
+    for attempt in range(2):
+        try:
+            resp = requests.post(url, json=payload, timeout=120)
+            if resp.status_code == 429:
+                print(f"[Gemini KEY_1] 할당량 초과, 이번 실행 종료")
+                return None
+            if resp.status_code in (401, 403):
+                print(f"[Gemini KEY_1] 키 인증 오류({resp.status_code})")
+                return None
+            if resp.status_code in (500, 502, 503, 504):
                 if attempt == 0:
-                    print(f"[Gemini KEY_{_gemini_key_index+1}] 오류: {exc} (재시도)")
+                    print(f"[Gemini KEY_1] 일시적 서버 오류({resp.status_code}), 재시도")
                     time.sleep(5)
                     continue
-                print(f"[Gemini KEY_{_gemini_key_index+1}] 오류: {exc}")
+                print(f"[Gemini KEY_1] 일시적 서버 오류({resp.status_code}) 재시도 실패, 이번 기사 건너뜀")
                 return None
-        if retry_done:
-            continue
-
-            _gemini_key_index += 1
-
-    print("[Gemini] 모든 키 소진")
+            resp.raise_for_status()
+            data = resp.json()
+            candidate = data["candidates"][0]
+            finish_reason = candidate.get("finishReason", "?")
+            usage = data.get("usageMetadata", {})
+            parts = candidate["content"]["parts"]
+            result = "".join(
+                p["text"] for p in parts if not p.get("thought", False)
+            ).strip()
+            print(f"[Gemini KEY_1 응답] finishReason={finish_reason} "
+                  f"thoughtsTokens={usage.get('thoughtsTokenCount', '?')} "
+                  f"outputTokens={usage.get('candidatesTokenCount', '?')}")
+            if finish_reason == "MAX_TOKENS":
+                print(f"[경고] 토큰 한도 도달로 응답이 잘렸을 수 있음")
+            print(f"[Gemini KEY_1 응답 본문]\n{result[:300]}")
+            return _parse_rewrite_result(result, original_title)
+        except Exception as exc:
+            if attempt == 0:
+                print(f"[Gemini KEY_1] 오류: {exc} (재시도)")
+                time.sleep(5)
+                continue
+            print(f"[Gemini KEY_1] 오류: {exc}")
+            return None
     return None
 
 
