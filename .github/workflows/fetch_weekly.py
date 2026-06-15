@@ -9,6 +9,7 @@ import os
 import json
 import hashlib
 import requests
+import markdown
 from datetime import datetime, timezone, timedelta
 
 KST = timezone(timedelta(hours=9))
@@ -186,7 +187,8 @@ def generate_weekly_proposal(posts: list) -> dict | None:
                 title = title.replace("이번 주 연구 기획서: ", "").strip()
                 break
 
-        return {"title": title, "content": content}
+        content_html = markdown.markdown(content, extensions=['nl2br'])
+        return {"title": title, "content": content_html}
 
     except Exception as e:
         print(f"Gemini 오류: {e}")
