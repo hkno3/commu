@@ -75,6 +75,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
             }
             file_put_contents($old_path, json_encode($old_articles, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         }
+        // weekly_research.json도 업데이트 (주간 기획서)
+        $weekly_path = DATA_DIR . '/weekly_research.json';
+        if ($article_data && file_exists($weekly_path)) {
+            $weekly = json_decode(file_get_contents($weekly_path), true) ?: [];
+            foreach ($weekly as &$a) {
+                if (($a['article_id'] ?? '') === $edit_id) {
+                    $a['title']    = $new_title ?: $a['title'];
+                    $a['summary']  = $new_summary ?: $a['summary'];
+                    $a['content']  = $new_content !== '' ? $new_content : ($a['content'] ?? '');
+                    $a['image_url'] = $new_image_url;
+                    break;
+                }
+            }
+            unset($a);
+            file_put_contents($weekly_path, json_encode($weekly, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        }
         // 새 카테고리 파일에 추가 (카테고리 변경 시)
         if ($article_data && $old_cat !== $new_cat) {
             $new_path = DATA_DIR . '/' . cat_to_filename($new_cat) . '.json';
@@ -90,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
                 if (($a['article_id'] ?? '') === $edit_id) {
                     $a['title']          = $new_title ?: $a['title'];
                     $a['summary']        = $new_summary ?: $a['summary'];
+                    $a['content']        = $new_content !== '' ? $new_content : ($a['content'] ?? '');
                     $a['category']       = $new_cat;
                     $a['category_label'] = $new_cat_label;
                     $a['image_url']      = $new_image_url;
