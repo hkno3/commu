@@ -1,5 +1,29 @@
 Options -Indexes
+
+<RequireAll>
+    Require all granted
+    Require not ip 133.200.41.128
+    Require not ip 223.185.57.16
+    Require not ip 122.183.38.230
+    Require not ip 223.178.214.44
+    Require not ip 185.61.154.206
+    Require not ip 67.20.76.238
+    Require not ip 104.37.86.14
+    Require not ip 51.158.126.65
+    Require not ip 97.74.88.143
+    Require not ip 103.53.170.39
+    Require not ip 195.242.101.122
+    Require not ip 47.128.117.0/24
+</RequireAll>
+
 RewriteEngine On
+
+# 자동 글쓰기(save_article.php)는 python-requests UA를 쓰므로 봇 차단에서 예외 처리
+RewriteCond %{REQUEST_URI} !^/api/save_article\.php
+RewriteCond %{HTTP_USER_AGENT} python-requests [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} python-urllib [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} TikTokSpider [NC]
+RewriteRule .* - [F,L]
 
 # article slug URL: /article/slug → article.php?slug=slug
 RewriteRule ^article/([a-z0-9-]+)/?$ /article.php?slug=$1 [L,QSA]
