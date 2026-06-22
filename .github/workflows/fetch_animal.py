@@ -7,6 +7,7 @@
 import os
 import json
 import re
+import random
 import hashlib
 import requests
 
@@ -340,7 +341,7 @@ def search_unsplash_image(keyword: str) -> str | None:
         results = resp.json().get("results", [])
         print(f"[Unsplash] '{keyword}' 결과 {len(results)}건")
         if results:
-            return results[0].get("urls", {}).get("regular")
+            return random.choice(results).get("urls", {}).get("regular")
         # 폴백: animal 키워드
         resp2 = requests.get(
             UNSPLASH_SEARCH_URL,
@@ -349,7 +350,7 @@ def search_unsplash_image(keyword: str) -> str | None:
             timeout=15,
         )
         results2 = resp2.json().get("results", [])
-        return results2[0].get("urls", {}).get("regular") if results2 else None
+        return random.choice(results2).get("urls", {}).get("regular") if results2 else None
     except Exception as e:
         print(f"[Unsplash 실패] {e}")
         return None
