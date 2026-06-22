@@ -100,21 +100,21 @@ if (!$article) {
 // Category metadata
 // -----------------------------------------------------------------
 $CATEGORY_META = [
-    '정치'     => ['color' => '#c0392b', 'bg' => '#fff0f0'],
-    '경제'     => ['color' => '#27ae60', 'bg' => '#f0fff4'],
-    '사회'     => ['color' => '#2980b9', 'bg' => '#f0f4ff'],
-    '생활_문화'=> ['color' => '#e67e22', 'bg' => '#fff8f0'],
-    '세계'     => ['color' => '#8e44ad', 'bg' => '#f5f0ff'],
-    'IT_과학'  => ['color' => '#16a085', 'bg' => '#f0fffe'],
-    '부동산'   => ['color' => '#d35400', 'bg' => '#fffbf0'],
-    '헬스_건강'=> ['color' => '#1abc9c', 'bg' => '#f0fff8'],
-    '스포츠'   => ['color' => '#2471a3', 'bg' => '#f0f8ff'],
-    '연예'     => ['color' => '#c0392b', 'bg' => '#fff0fb'],
+    '정치'     => ['color' => '#7a2e2e', 'bg' => 'none'],
+    '경제'     => ['color' => '#2f5d4f', 'bg' => 'none'],
+    '사회'     => ['color' => '#2c4a63', 'bg' => 'none'],
+    '생활_문화'=> ['color' => '#8a5a2e', 'bg' => 'none'],
+    '세계'     => ['color' => '#5b4a7a', 'bg' => 'none'],
+    'IT_과학'  => ['color' => '#2e6b66', 'bg' => 'none'],
+    '부동산'   => ['color' => '#8a5328', 'bg' => 'none'],
+    '헬스_건강'=> ['color' => '#2e7a6a', 'bg' => 'none'],
+    '스포츠'   => ['color' => '#2c5a73', 'bg' => 'none'],
+    '연예'     => ['color' => '#8a3550', 'bg' => 'none'],
 ];
 
 $cat_raw  = $article['category'] ?? '';
 $cat_key  = str_replace('/', '_', $cat_raw);
-$cat_meta = $CATEGORY_META[$cat_key] ?? ['color' => '#1a73e8', 'bg' => '#e8f0fe'];
+$cat_meta = $CATEGORY_META[$cat_key] ?? ['color' => '#8a3324', 'bg' => 'none'];
 
 // Normalise fields
 $title       = htmlspecialchars($article['title'] ?? '', ENT_QUOTES, 'UTF-8');
@@ -266,7 +266,7 @@ try {
   <meta name="twitter:title" content="<?= $title ?>">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="/assets/images/favicon.png">
   <link rel="apple-touch-icon" href="/assets/images/favicon.png">
   <link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/assets/css/style.css') ?: time() ?>">

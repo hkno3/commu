@@ -6,12 +6,12 @@ const CAT_MAP = {
   '생활/문화': '생활_문화', 'IT/과학': 'IT_과학', '천천히 늙자': '천천히_늙자',
 };
 const CAT_COLORS = {
-  '정치': '#c0392b', '경제': '#27ae60', '사회': '#2980b9',
-  '생활_문화': '#e67e22', 'IT_과학': '#16a085', '천천히_늙자': '#7b5ea7',
+  '정치': '#7a2e2e', '경제': '#2f5d4f', '사회': '#2c4a63',
+  '생활_문화': '#8a5a2e', 'IT_과학': '#2e6b66', '천천히_늙자': '#5e3d7a',
 };
 const CAT_BG = {
-  '정치': '#fff0f0', '경제': '#f0fff4', '사회': '#f0f4ff',
-  '생활_문화': '#fff8f0', 'IT_과학': '#f0fffe', '천천히_늙자': '#f8f0ff',
+  '정치': 'none', '경제': 'none', '사회': 'none',
+  '생활_문화': 'none', 'IT_과학': 'none', '천천히_늙자': 'none',
 };
 
 // Allow category to be preset from PHP (category.php / article.php)

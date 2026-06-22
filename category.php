@@ -9,12 +9,12 @@ $raw_cat = trim($_GET['cat'] ?? '');
 
 // Allowed categories
 $CATEGORIES = [
-    '정치'      => ['label' => '정치',     'color' => '#c0392b', 'bg' => '#fff0f0'],
-    '경제'      => ['label' => '경제',     'color' => '#27ae60', 'bg' => '#f0fff4'],
-    '사회'      => ['label' => '사회',     'color' => '#2980b9', 'bg' => '#f0f4ff'],
-    '생활_문화'  => ['label' => '생활/문화', 'color' => '#e67e22', 'bg' => '#fff8f0'],
-    'IT_과학'    => ['label' => 'IT/과학',   'color' => '#16a085', 'bg' => '#f0fffe'],
-    '천천히_늙자' => ['label' => '천천히 늙자','color' => '#7b5ea7', 'bg' => '#f8f0ff'],
+    '정치'      => ['label' => '정치',     'color' => '#7a2e2e', 'bg' => 'none'],
+    '경제'      => ['label' => '경제',     'color' => '#2f5d4f', 'bg' => 'none'],
+    '사회'      => ['label' => '사회',     'color' => '#2c4a63', 'bg' => 'none'],
+    '생활_문화'  => ['label' => '생활/문화', 'color' => '#8a5a2e', 'bg' => 'none'],
+    'IT_과학'    => ['label' => 'IT/과학',   'color' => '#2e6b66', 'bg' => 'none'],
+    '천천히_늙자' => ['label' => '천천히 늙자','color' => '#5e3d7a', 'bg' => 'none'],
 ];
 
 // Normalise incoming param (/ → _)
@@ -35,7 +35,7 @@ $page_title = $cat_info ? $cat_info['label'] . ' 뉴스 - ' . SITE_NAME : SITE_N
   <title><?= htmlspecialchars($page_title) ?></title>
   <meta name="description" content="<?= htmlspecialchars($cat_info ? $cat_info['label'] . ' 분야 최신 뉴스 모음' : SITE_DESC) ?>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/assets/css/style.css') ?: time() ?>">
   <!-- AdSense -->
   <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<?= ADSENSE_PUBLISHER_ID ?>" crossorigin="anonymous"></script> -->
