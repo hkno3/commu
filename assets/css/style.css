@@ -658,6 +658,12 @@ header {
     height: 400px;
   }
 
+  .comment-panel .rss-panel,
+  .comment-panel-header,
+  .comment-form {
+    flex-shrink: 0;
+  }
+
   .main-wrap {
     padding: 12px;
   }
