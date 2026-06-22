@@ -122,7 +122,7 @@ $summary     = htmlspecialchars($article['summary'] ?? '', ENT_QUOTES, 'UTF-8');
 // content: HTML with h2/h3/p tags. Fall back to summary if not present.
 $raw_content = $article['content'] ?? '';
 if ($raw_content) {
-    $content_html = strip_tags($raw_content, '<h2><h3><p><br><strong><em><details><summary><table><thead><tbody><tr><th><td>');
+    $content_html = strip_tags($raw_content, '<h2><h3><p><br><strong><em><details><summary><table><thead><tbody><tr><th><td><a>');
 
     // 닫히지 않은 <table>이 있으면 그 뒤에 오는 <h2>/<h3> 섹션(자주 묻는 질문, 글을 마치며 등)과
     // 사이드바 요소까지 표 안으로 끌려 들어가 렌더링이 붕괴됨 -> 다음 헤딩 앞에 닫는 태그 보강
