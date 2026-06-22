@@ -655,13 +655,19 @@ header {
   }
 
   .comment-panel {
-    height: 400px;
+    height: auto;
+    overflow: visible;
   }
 
   .comment-panel .rss-panel,
   .comment-panel-header,
   .comment-form {
     flex-shrink: 0;
+  }
+
+  .comment-list {
+    max-height: 320px;
+    overflow-y: auto;
   }
 
   .main-wrap {
