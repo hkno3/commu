@@ -169,7 +169,7 @@ function createArticleCard(article) {
         <span class="cat-badge" style="background:${bg}; color:${color};">${escHtml(article.category_label || article.category || '')}</span>
         <span class="pub-date">${formatDate(article.pub_date || article.pubDate)}</span>
       </div>
-      <h3>${escHtml(article.title)}</h3>
+      <h2>${escHtml(article.title)}</h2>
       <p>${escHtml(article.summary || '')}</p>
       <div class="article-card-footer">
         <span class="comment-count">💬 <span id="cnt-${article.article_id}">${article.comment_count || 0}</span></span>
