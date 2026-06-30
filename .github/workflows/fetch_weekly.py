@@ -8,6 +8,7 @@
 import os
 import json
 import hashlib
+import time
 import requests
 import markdown
 from datetime import datetime, timezone, timedelta
@@ -167,9 +168,19 @@ def generate_weekly_proposal(posts: list) -> dict | None:
         },
     }
 
+    for attempt in range(1, 4):
+        try:
+            r = requests.post(GEMINI_URL, json=payload, timeout=300)
+            r.raise_for_status()
+            break
+        except Exception as e:
+            print(f"Gemini 오류 (시도 {attempt}/3): {e}")
+            if attempt < 3:
+                time.sleep(30)
+            else:
+                return None
+
     try:
-        r = requests.post(GEMINI_URL, json=payload, timeout=120)
-        r.raise_for_status()
         data = r.json()
         candidate = data["candidates"][0]
         parts = candidate["content"]["parts"]
@@ -196,7 +207,7 @@ def generate_weekly_proposal(posts: list) -> dict | None:
         return {"title": title, "content": content_html}
 
     except Exception as e:
-        print(f"Gemini 오류: {e}")
+        print(f"응답 파싱 오류: {e}")
         return None
 
 
