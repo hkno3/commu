@@ -71,6 +71,26 @@ $initial_cat = $CAT_SLUG_MAP[$cat_param] ?? ($cat_param ?: 'all');
   </div>
 </section>
 
+<section class="features-section">
+  <div class="features-inner">
+    <div class="feature-item">
+      <div class="feature-icon">🤖</div>
+      <h3 class="feature-title">AI 뉴스 요약</h3>
+      <p class="feature-desc">Gemini AI가 주요 기사를 핵심만 추려 요약합니다. 긴 기사도 30초면 파악.</p>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">💬</div>
+      <h3 class="feature-title">실시간 댓글 토론</h3>
+      <p class="feature-desc">기사마다 독자들의 생생한 의견을 남기고 토론에 참여하세요.</p>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📂</div>
+      <h3 class="feature-title">6개 카테고리</h3>
+      <p class="feature-desc">정치·경제·사회·문화·IT·건강까지, 관심 분야만 골라서 확인하세요.</p>
+    </div>
+  </div>
+</section>
+
 <div class="main-wrap" id="news-list">
   <div class="main-index-layout">
 
