@@ -31,10 +31,15 @@ try {
 
 $CAT_SLUG_MAP = [
     'politics' => '정치', 'economy' => '경제', 'society' => '사회',
-    'lifestyle' => '생활_문화', 'tech' => 'IT_과학', 'animal' => '천천히_늙자',
+    'lifestyle' => '생활_문화', 'tech' => 'IT_과학', 'animal' => '천천히_늘자',
 ];
 $cat_param = $_GET['cat'] ?? '';
 $initial_cat = $CAT_SLUG_MAP[$cat_param] ?? ($cat_param ?: 'all');
+
+$hero_image_file = DATA_DIR . '/hero_image.txt';
+$hero_image_url  = file_exists($hero_image_file) ? trim(file_get_contents($hero_image_file)) : '';
+$default_hero    = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1600&q=80';
+$hero_bg_url     = $hero_image_url ?: $default_hero;
 ?>
 <!DOCTYPE html>
 <html lang="ko">
@@ -62,7 +67,7 @@ $initial_cat = $CAT_SLUG_MAP[$cat_param] ?? ($cat_param ?: 'all');
   <div class="cat-nav-inner" id="cat-nav-inner"></div>
 </nav>
 
-<section class="hero-section">
+<section class="hero-section" style="background-image: linear-gradient(rgba(20,18,16,0.78), rgba(20,18,16,0.88)), url('<?= htmlspecialchars($hero_bg_url) ?>');">
   <div class="hero-inner">
     <p class="hero-eyebrow">실시간 뉴스 커뮤니티</p>
     <h2 class="hero-title">한국 주요 뉴스를<br>한눈에</h2>

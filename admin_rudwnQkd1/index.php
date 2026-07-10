@@ -30,6 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['head_codes']) && ($_S
 }
 $head_codes = file_exists($head_codes_file) ? file_get_contents($head_codes_file) : '';
 
+// ── 히어로 배경 이미지 저장 ──
+$hero_image_file = DATA_DIR . '/hero_image.txt';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hero_image_url']) && ($_SESSION['admin_auth'] ?? false)) {
+    file_put_contents($hero_image_file, trim($_POST['hero_image_url']));
+    $hero_image_saved = true;
+}
+$hero_image_url = file_exists($hero_image_file) ? trim(file_get_contents($hero_image_file)) : '';
+
 // ── BODY 코드 저장 (</body> 직전 삽입) ──
 $body_codes_file = DATA_DIR . '/body_codes.txt';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['body_codes']) && ($_SESSION['admin_auth'] ?? false)) {
@@ -126,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id']) && ($_SESS
 // ── 기사 삭제 ──
 if (isset($_GET['delete']) && ($_SESSION['admin_auth'] ?? false)) {
     $del_id  = preg_replace('/[^a-z0-9_]/i', '', $_GET['delete']);
-    $del_cat = preg_replace('/[^a-zA-Z_\/가-힣]/', '', $_GET['cat'] ?? '');
+    $del_cat = preg_replace('/[^a-zA-Z_\/가-힙]/', '', $_GET['cat'] ?? '');
     $del_error = '';
     if ($del_id && $del_cat) {
         $path = DATA_DIR . '/' . cat_to_filename($del_cat) . '.json';
@@ -168,7 +176,7 @@ if (isset($_GET['del_comment']) && ($_SESSION['admin_auth'] ?? false)) {
 
 $is_auth = $_SESSION['admin_auth'] ?? false;
 
-$all_cats = ["정치","경제","사회","생활/문화","IT/과학","천천히 늙자"];
+$all_cats = ["정치","경제","사회","생활/문화","IT/과학","천천히 늘자"];
 $cur_cat = $_GET['cat'] ?? '전체';
 $articles = [];
 if ($is_auth) {
@@ -316,6 +324,22 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
     <div class="notice" style="background:#f8d7da; color:#721c24;">❌ 삭제 오류: <?= htmlspecialchars($_GET['del_error']) ?><br>DATA_DIR: <?= DATA_DIR ?></div>
   <?php endif; ?>
 
+  <!-- 히어로 배경 이미지 -->
+  <div style="background:#fff; border-radius:8px; padding:20px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <h2 style="font-size:16px; margin-bottom:12px;">🖼 히어로 배경 이미지</h2>
+    <p style="font-size:12px; color:#888; margin-bottom:10px;">메인 페이지 상단 히어로 섹션의 배경 이미지 URL을 입력하세요. 비워두면 기본 검정 배경이 사용됩니다.</p>
+    <?php if (isset($hero_image_saved)): ?>
+      <div class="notice">✅ 저장되었습니다.</div>
+    <?php endif; ?>
+    <form method="POST">
+      <input type="text" name="hero_image_url" value="<?= htmlspecialchars($hero_image_url) ?>" placeholder="https://images.unsplash.com/..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:13px; margin-bottom:8px;">
+      <?php if ($hero_image_url): ?>
+        <div style="margin-bottom:8px;"><img src="<?= htmlspecialchars($hero_image_url) ?>" style="max-width:100%; max-height:160px; border-radius:6px; object-fit:cover;" onerror="this.style.display='none'"></div>
+      <?php endif; ?>
+      <button type="submit" style="padding:8px 24px; background:#1a73e8; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer;">저장</button>
+    </form>
+  </div>
+
   <!-- HEAD 코드 관리 -->
   <div style="background:#fff; border-radius:8px; padding:20px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
     <h2 style="font-size:16px; margin-bottom:12px;">🔧 &lt;head&gt; 코드 관리</h2>
@@ -384,7 +408,7 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
       </a>
     <?php endforeach; ?>
   </div>
-  <p style="color:#888; margin-bottom:16px;">총 <?= count($articles) ?>개 기사</p>
+  <p style="color:#888; margin-bottom:16px;">전 <?= count($articles) ?>개 기사</p>
 
   <?php foreach ($articles as $a): ?>
     <?php
@@ -446,7 +470,7 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
       <label>카테고리</label>
       <select name="new_cat" id="ef-cat">
         <?php foreach ($all_cats as $c): ?>
-          <option value="<?= htmlspecialchars(str_replace(['/','  ',' '], ['_','_','_'], $c)) ?>"><?= htmlspecialchars($c) ?></option>
+          <option value="<?= htmlspecialchars(str_replace(['/','  ',' '], ['_','_','_'], $c)) ?>"><?= htmlspecialchars($c) ?></option>
         <?php endforeach; ?>
       </select>
       <input type="hidden" name="new_cat_label" id="ef-cat-label">
@@ -460,7 +484,7 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
 
 <script>
 const ALL_CATS = <?= json_encode(array_combine(
-  array_map(fn($c) => str_replace(['/','  ',' '], ['_','_','_'], $c), $all_cats),
+  array_map(fn($c) => str_replace(['/','  ',' '], ['_','_','_'], $c), $all_cats),
   $all_cats
 )) ?>;
 
