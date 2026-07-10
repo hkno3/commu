@@ -71,7 +71,7 @@ $hero_bg_url     = $hero_image_url ?: $default_hero;
   <div class="hero-inner">
     <p class="hero-eyebrow">실시간 뉴스 커뮤니티</p>
     <h2 class="hero-title">한국 주요 뉴스를<br>한눈에</h2>
-    <p class="hero-desc">정치·경제·사회·문화·IT까지, AI가 요약한 최신 뉴스와<br>실시간 댓글 토론을 한 곳에서 만나보세요.</p>
+    <p class="hero-desc">정치·경제·사회·문화·IT까지, 핵심만 추린 최신 뉴스와<br>실시간 댓글 토론을 한 곳에서 만나보세요.</p>
     <a href="#news-list" class="hero-cta">뉴스 바로보기 ↓</a>
   </div>
 </section>
@@ -79,9 +79,9 @@ $hero_bg_url     = $hero_image_url ?: $default_hero;
 <section class="features-section">
   <div class="features-inner">
     <div class="feature-item">
-      <div class="feature-icon">🤖</div>
-      <h3 class="feature-title">AI 뉴스 요약</h3>
-      <p class="feature-desc">Gemini AI가 주요 기사를 핵심만 추려 요약합니다. 긴 기사도 30초면 파악.</p>
+      <div class="feature-icon">📝</div>
+      <h3 class="feature-title">핵심 요약</h3>
+      <p class="feature-desc">긴 기사도 핵심만 골라 짧게 정리해드립니다. 바쁜 일상에서 뉴스를 빠르게.</p>
     </div>
     <div class="feature-item">
       <div class="feature-icon">💬</div>
