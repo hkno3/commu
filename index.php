@@ -62,7 +62,16 @@ $initial_cat = $CAT_SLUG_MAP[$cat_param] ?? ($cat_param ?: 'all');
   <div class="cat-nav-inner" id="cat-nav-inner"></div>
 </nav>
 
-<div class="main-wrap">
+<section class="hero-section">
+  <div class="hero-inner">
+    <p class="hero-eyebrow">실시간 뉴스 커뮤니티</p>
+    <h2 class="hero-title">한국 주요 뉴스를<br>한눈에</h2>
+    <p class="hero-desc">정치·경제·사회·문화·IT까지, AI가 요약한 최신 뉴스와<br>실시간 댓글 토론을 한 곳에서 만나보세요.</p>
+    <a href="#news-list" class="hero-cta">뉴스 바로보기 ↓</a>
+  </div>
+</section>
+
+<div class="main-wrap" id="news-list">
   <div class="main-index-layout">
 
     <!-- 왼쪽: 기사 목록 -->
