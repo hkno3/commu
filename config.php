@@ -63,3 +63,13 @@ function cat_to_filename(string $cat): string {
     ];
     return $map[$cat] ?? str_replace('/', '_', $cat);
 }
+
+function get_banners(): array {
+    $file = DATA_DIR . '/banners.json';
+    if (!file_exists($file)) return [];
+    return json_decode(file_get_contents($file), true) ?: [];
+}
+
+function banner_html(string $code): string {
+    return trim($code);
+}

@@ -163,20 +163,22 @@ $hero_bg_url     = $hero_image_url ?: $default_hero;
       </div>
       <?php endif; ?>
 
-      <!-- 광고 자리 -->
-      <div class="sidebar-box sidebar-ad">
-        <div class="sidebar-box-title">광고</div>
-        <div style="min-height:250px; display:flex; align-items:center; justify-content:center; color:#bbb; font-size:13px;">
-          <!-- AdSense 코드 여기에 -->
-          광고 영역
-        </div>
+      <!-- 배너 광고 300x250 -->
+      <?php $__b = get_banners(); if (!empty($__b['sidebar'])): ?>
+      <div class="sidebar-box sidebar-ad" style="text-align:center; padding:12px; overflow:hidden;">
+        <?= banner_html($__b['sidebar']) ?>
       </div>
+      <?php endif; ?>
 
     </aside>
   </div>
 </div>
 
-<script>const INITIAL_CATEGORY = <?= json_encode($initial_cat) ?>;</script>
+<?php $__b = get_banners(); ?>
+<script>
+const INITIAL_CATEGORY = <?= json_encode($initial_cat) ?>;
+const BANNER_LIST_CODE = <?= json_encode($__b['list'] ?? '') ?>;
+</script>
 <script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/assets/js/main.js') ?: time() ?>"></script>
 
 <footer class="site-footer">

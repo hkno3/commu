@@ -38,6 +38,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hero_image_url']) && 
 }
 $hero_image_url = file_exists($hero_image_file) ? trim(file_get_contents($hero_image_file)) : '';
 
+// ── 배너 광고 저장 ──
+$banners_file = DATA_DIR . '/banners.json';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['banner_sidebar']) && ($_SESSION['admin_auth'] ?? false)) {
+    $banners = [
+        'sidebar' => trim($_POST['banner_sidebar'] ?? ''),
+        'list'    => trim($_POST['banner_list'] ?? ''),
+        'article' => trim($_POST['banner_article'] ?? ''),
+    ];
+    file_put_contents($banners_file, json_encode($banners, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    $banners_saved = true;
+}
+$banners = file_exists($banners_file) ? (json_decode(file_get_contents($banners_file), true) ?: []) : [];
+
 // ── BODY 코드 저장 (</body> 직전 삽입) ──
 $body_codes_file = DATA_DIR . '/body_codes.txt';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['body_codes']) && ($_SESSION['admin_auth'] ?? false)) {
@@ -323,6 +336,33 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
   <?php if (isset($_GET['del_error'])): ?>
     <div class="notice" style="background:#f8d7da; color:#721c24;">❌ 삭제 오류: <?= htmlspecialchars($_GET['del_error']) ?><br>DATA_DIR: <?= DATA_DIR ?></div>
   <?php endif; ?>
+
+  <!-- 배너 광고 관리 -->
+  <div style="background:#fff; border-radius:8px; padding:20px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <h2 style="font-size:16px; margin-bottom:4px;">📢 배너 광고 관리</h2>
+    <p style="font-size:12px; color:#888; margin-bottom:14px;">배너 이미지 URL과 클릭 링크를 입력하세요. 비워두면 해당 위치에 광고가 표시되지 않습니다.</p>
+    <?php if (isset($banners_saved)): ?>
+      <div class="notice">✅ 저장되었습니다.</div>
+    <?php endif; ?>
+    <form method="POST">
+      <!-- 사이드바 300x250 -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📌 사이드바 배너 (300×250)</label>
+        <textarea name="banner_sidebar" rows="3" placeholder="<iframe ...> 코드 전체를 붙여넣으세요" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; box-sizing:border-box;"><?= htmlspecialchars($banners['sidebar'] ?? '') ?></textarea>
+      </div>
+      <!-- 기사 목록 728x90 -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📋 기사 목록 배너 (728×90, 5번째 카드마다)</label>
+        <textarea name="banner_list" rows="3" placeholder="<iframe ...> 코드 전체를 붙여넣으세요" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; box-sizing:border-box;"><?= htmlspecialchars($banners['list'] ?? '') ?></textarea>
+      </div>
+      <!-- 기사 본문 728x90 -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📄 기사 본문 배너 (728×90, 본문 하단)</label>
+        <textarea name="banner_article" rows="3" placeholder="<iframe ...> 코드 전체를 붙여넣으세요" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; box-sizing:border-box;"><?= htmlspecialchars($banners['article'] ?? '') ?></textarea>
+      </div>
+      <button type="submit" style="padding:8px 24px; background:#1a73e8; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer;">저장</button>
+    </form>
+  </div>
 
   <!-- 히어로 배경 이미지 -->
   <div style="background:#fff; border-radius:8px; padding:20px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
