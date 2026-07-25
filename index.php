@@ -164,9 +164,9 @@ $hero_bg_url     = $hero_image_url ?: $default_hero;
       <?php endif; ?>
 
       <!-- 배너 광고 300x250 -->
-      <?php $__b = get_banners(); $__sidebar_html = banner_html($__b['sidebar'] ?? [], 300, 250); if ($__sidebar_html): ?>
-      <div class="sidebar-box sidebar-ad" style="text-align:center; padding:12px;">
-        <?= $__sidebar_html ?>
+      <?php $__b = get_banners(); if (!empty($__b['sidebar'])): ?>
+      <div class="sidebar-box sidebar-ad" style="text-align:center; padding:12px; overflow:hidden;">
+        <?= banner_html($__b['sidebar']) ?>
       </div>
       <?php endif; ?>
 
@@ -174,10 +174,10 @@ $hero_bg_url     = $hero_image_url ?: $default_hero;
   </div>
 </div>
 
-<?php $__b = get_banners(); $__list = $__b['list'] ?? []; ?>
+<?php $__b = get_banners(); ?>
 <script>
 const INITIAL_CATEGORY = <?= json_encode($initial_cat) ?>;
-const BANNER_LIST = <?= json_encode(['img' => $__list['img'] ?? '', 'link' => $__list['link'] ?? '']) ?>;
+const BANNER_LIST_CODE = <?= json_encode($__b['list'] ?? '') ?>;
 </script>
 <script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/assets/js/main.js') ?: time() ?>"></script>
 

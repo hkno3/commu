@@ -368,9 +368,9 @@ try {
         <!-- <ins class="adsbygoogle" style="display:block; margin:20px 0;" data-ad-client="<?= ADSENSE_PUBLISHER_ID ?>" data-ad-slot="XXXXXXXXXX" data-ad-format="rectangle"></ins> -->
 
         <!-- 배너 광고 728x90 -->
-        <?php $__art_banner = banner_html((get_banners()['article'] ?? []), 728, 90); if ($__art_banner): ?>
+        <?php $__art_code = get_banners()['article'] ?? ''; if ($__art_code): ?>
         <div style="text-align:center; margin:24px 0; overflow:hidden;">
-          <?= $__art_banner ?>
+          <?= banner_html($__art_code) ?>
         </div>
         <?php endif; ?>
 
