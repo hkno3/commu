@@ -506,27 +506,9 @@ try {
     if (typeof buildCategoryNav === 'function') {
       buildCategoryNav();
     }
-    // 모바일에서 배너 iframe 자동 축소
-    function scaleBanners() {
-      document.querySelectorAll('.banner-wrap iframe').forEach(function(f) {
-        const w = f.getAttribute('width');
-        if (!w) return;
-        const parent = f.parentElement.offsetWidth;
-        if (parent < parseInt(w)) {
-          const scale = parent / parseInt(w);
-          f.style.transform = 'scale(' + scale + ')';
-          f.style.transformOrigin = 'top left';
-          f.parentElement.style.height = (parseInt(f.getAttribute('height') || 90) * scale) + 'px';
-        } else {
-          f.style.transform = '';
-          f.parentElement.style.height = '';
-        }
-      });
-    }
-    scaleBanners();
-    window.addEventListener('resize', scaleBanners);
   });
 </script>
+<?php include __DIR__ . '/includes/banner_scale.php'; ?>
 <?php include __DIR__ . '/includes/body_codes.php'; ?>
 </body>
 </html>

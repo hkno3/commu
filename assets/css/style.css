@@ -494,16 +494,14 @@ header {
   margin: 16px 0;
   overflow: hidden;
   width: 100%;
+  display: block;
 }
-.banner-wrap iframe,
-.banner-wrap img {
-  max-width: 100% !important;
-  height: auto !important;
+.banner-wrap iframe {
+  display: block;
+  border: 0;
 }
 @media (max-width: 768px) {
   .banner-wrap iframe {
-    width: 100% !important;
-    max-width: 100% !important;
     transform-origin: top left;
   }
 }
