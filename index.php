@@ -180,7 +180,12 @@ $hero_bg_url     = $hero_image_url ?: $default_hero;
 <?php $__b = get_banners(); ?>
 <script>
 const INITIAL_CATEGORY = <?= json_encode($initial_cat) ?>;
-const BANNER_LIST_CODE = <?= json_encode($__b['list'] ?? '') ?>;
+const BANNER_LIST_MIDS = <?= json_encode([
+    5  => $__b['list_mid1'] ?? '',
+    10 => $__b['list_mid2'] ?? '',
+    15 => $__b['list_mid3'] ?? '',
+    20 => $__b['list_mid4'] ?? '',
+]) ?>;
 </script>
 <script>
 // 목록 상단 배너 모바일 축소

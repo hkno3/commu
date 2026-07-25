@@ -141,14 +141,17 @@ function appendArticleCards(newArticles, replace = false) {
   newArticles.forEach(article => {
     const card = createArticleCard(article);
     listEl.appendChild(card);
-    // 5번째 카드마다 배너 삽입
-    if (typeof BANNER_LIST_CODE !== 'undefined' && BANNER_LIST_CODE &&
-        listEl.querySelectorAll('.article-card').length % 5 === 0) {
-      const wrap = document.createElement('div');
-      wrap.className = 'banner-list-wrap';
-      wrap.style.cssText = 'text-align:center; margin:12px 0; overflow:hidden;';
-      wrap.innerHTML = BANNER_LIST_CODE;
-      listEl.appendChild(wrap);
+    // 5/10/15/20번째 카드마다 해당 배너 삽입
+    if (typeof BANNER_LIST_MIDS !== 'undefined') {
+      const cardCount = listEl.querySelectorAll('.article-card').length;
+      const code = BANNER_LIST_MIDS[cardCount];
+      if (code) {
+        const wrap = document.createElement('div');
+        wrap.className = 'banner-wrap';
+        wrap.style.cssText = 'text-align:center; margin:12px 0; overflow:hidden;';
+        wrap.innerHTML = code;
+        listEl.appendChild(wrap);
+      }
     }
   });
   loadCommentCounts(newArticles);

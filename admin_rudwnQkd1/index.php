@@ -44,7 +44,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['banner_sidebar']) && 
     $banners = [
         'sidebar'          => trim($_POST['banner_sidebar'] ?? ''),
         'list_top'         => trim($_POST['banner_list_top'] ?? ''),
-        'list'             => trim($_POST['banner_list'] ?? ''),
+        'list_mid1'        => trim($_POST['banner_list_mid1'] ?? ''),
+        'list_mid2'        => trim($_POST['banner_list_mid2'] ?? ''),
+        'list_mid3'        => trim($_POST['banner_list_mid3'] ?? ''),
+        'list_mid4'        => trim($_POST['banner_list_mid4'] ?? ''),
         'article_top'      => trim($_POST['banner_article_top'] ?? ''),
         'article_middle'   => trim($_POST['banner_article_middle'] ?? ''),
         'article_bottom'   => trim($_POST['banner_article_bottom'] ?? ''),
@@ -358,11 +361,13 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
         <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📋 기사 목록 상단 배너 (728×90)</label>
         <textarea name="banner_list_top" rows="3" placeholder="<iframe ...> 코드 전체를 붙여넣으세요" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; box-sizing:border-box;"><?= htmlspecialchars($banners['list_top'] ?? '') ?></textarea>
       </div>
-      <!-- 기사 목록 사이 728x90 -->
+      <!-- 기사 목록 중간 1~4 -->
+      <?php foreach ([1=>5, 2=>10, 3=>15, 4=>20] as $n => $pos): ?>
       <div style="margin-bottom:16px;">
-        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📋 기사 목록 중간 배너 (728×90, 5번째 카드마다)</label>
-        <textarea name="banner_list" rows="3" placeholder="<iframe ...> 코드 전체를 붙여넣으세요" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; box-sizing:border-box;"><?= htmlspecialchars($banners['list'] ?? '') ?></textarea>
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📋 기사 목록 중간<?= $n ?> 배너 (728×90, <?= $pos ?>번째 카드 아래)</label>
+        <textarea name="banner_list_mid<?= $n ?>" rows="3" placeholder="<iframe ...> 코드 전체를 붙여넣으세요" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; box-sizing:border-box;"><?= htmlspecialchars($banners['list_mid' . $n] ?? '') ?></textarea>
       </div>
+      <?php endforeach; ?>
       <!-- 기사 본문 상단 -->
       <div style="margin-bottom:16px;">
         <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📄 기사 본문 상단 배너 (728×90)</label>
