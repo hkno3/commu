@@ -488,6 +488,26 @@ header {
   background: #fbfaf7;
 }
 
+/* ── Banner wrapper (responsive) ── */
+.banner-wrap {
+  text-align: center;
+  margin: 16px 0;
+  overflow: hidden;
+  width: 100%;
+}
+.banner-wrap iframe,
+.banner-wrap img {
+  max-width: 100% !important;
+  height: auto !important;
+}
+@media (max-width: 768px) {
+  .banner-wrap iframe {
+    width: 100% !important;
+    max-width: 100% !important;
+    transform-origin: top left;
+  }
+}
+
 /* ── RSS Panel ── */
 .rss-panel {
   border-bottom: 1px solid var(--border);

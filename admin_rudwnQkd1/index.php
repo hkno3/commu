@@ -42,9 +42,11 @@ $hero_image_url = file_exists($hero_image_file) ? trim(file_get_contents($hero_i
 $banners_file = DATA_DIR . '/banners.json';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['banner_sidebar']) && ($_SESSION['admin_auth'] ?? false)) {
     $banners = [
-        'sidebar' => trim($_POST['banner_sidebar'] ?? ''),
-        'list'    => trim($_POST['banner_list'] ?? ''),
-        'article' => trim($_POST['banner_article'] ?? ''),
+        'sidebar'          => trim($_POST['banner_sidebar'] ?? ''),
+        'list'             => trim($_POST['banner_list'] ?? ''),
+        'article_top'      => trim($_POST['banner_article_top'] ?? ''),
+        'article_middle'   => trim($_POST['banner_article_middle'] ?? ''),
+        'article_bottom'   => trim($_POST['banner_article_bottom'] ?? ''),
     ];
     file_put_contents($banners_file, json_encode($banners, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     $banners_saved = true;
@@ -355,10 +357,20 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
         <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📋 기사 목록 배너 (728×90, 5번째 카드마다)</label>
         <textarea name="banner_list" rows="3" placeholder="<iframe ...> 코드 전체를 붙여넣으세요" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; box-sizing:border-box;"><?= htmlspecialchars($banners['list'] ?? '') ?></textarea>
       </div>
-      <!-- 기사 본문 728x90 -->
+      <!-- 기사 본문 상단 -->
       <div style="margin-bottom:16px;">
-        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📄 기사 본문 배너 (728×90, 본문 하단)</label>
-        <textarea name="banner_article" rows="3" placeholder="<iframe ...> 코드 전체를 붙여넣으세요" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; box-sizing:border-box;"><?= htmlspecialchars($banners['article'] ?? '') ?></textarea>
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📄 기사 본문 상단 배너 (728×90)</label>
+        <textarea name="banner_article_top" rows="3" placeholder="<iframe ...> 코드 전체를 붙여넣으세요" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; box-sizing:border-box;"><?= htmlspecialchars($banners['article_top'] ?? '') ?></textarea>
+      </div>
+      <!-- 기사 본문 중단 -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📄 기사 본문 중단 배너 (728×90)</label>
+        <textarea name="banner_article_middle" rows="3" placeholder="<iframe ...> 코드 전체를 붙여넣으세요" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; box-sizing:border-box;"><?= htmlspecialchars($banners['article_middle'] ?? '') ?></textarea>
+      </div>
+      <!-- 기사 본문 하단 -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📄 기사 본문 하단 배너 (728×90)</label>
+        <textarea name="banner_article_bottom" rows="3" placeholder="<iframe ...> 코드 전체를 붙여넣으세요" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; box-sizing:border-box;"><?= htmlspecialchars($banners['article_bottom'] ?? '') ?></textarea>
       </div>
       <button type="submit" style="padding:8px 24px; background:#1a73e8; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer;">저장</button>
     </form>
