@@ -367,6 +367,13 @@ try {
         <!-- AdSense Rectangle -->
         <!-- <ins class="adsbygoogle" style="display:block; margin:20px 0;" data-ad-client="<?= ADSENSE_PUBLISHER_ID ?>" data-ad-slot="XXXXXXXXXX" data-ad-format="rectangle"></ins> -->
 
+        <!-- 배너 광고 728x90 -->
+        <?php $__art_banner = banner_html((get_banners()['article'] ?? []), 728, 90); if ($__art_banner): ?>
+        <div style="text-align:center; margin:24px 0; overflow:hidden;">
+          <?= $__art_banner ?>
+        </div>
+        <?php endif; ?>
+
         <!-- Related / Back navigation -->
         <div style="margin-top:32px; padding-top:20px; border-top:1px solid var(--border);">
           <a href="javascript:history.back()" style="font-size:13px; color:var(--text-muted);">← 이전 페이지</a>

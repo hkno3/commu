@@ -38,6 +38,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hero_image_url']) && 
 }
 $hero_image_url = file_exists($hero_image_file) ? trim(file_get_contents($hero_image_file)) : '';
 
+// ── 배너 광고 저장 ──
+$banners_file = DATA_DIR . '/banners.json';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['banner_sidebar']) && ($_SESSION['admin_auth'] ?? false)) {
+    $banners = [
+        'sidebar'  => ['img' => trim($_POST['banner_sidebar']['img'] ?? ''), 'link' => trim($_POST['banner_sidebar']['link'] ?? '')],
+        'list'     => ['img' => trim($_POST['banner_list']['img'] ?? ''),    'link' => trim($_POST['banner_list']['link'] ?? '')],
+        'article'  => ['img' => trim($_POST['banner_article']['img'] ?? ''), 'link' => trim($_POST['banner_article']['link'] ?? '')],
+    ];
+    file_put_contents($banners_file, json_encode($banners, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    $banners_saved = true;
+}
+$banners = file_exists($banners_file) ? (json_decode(file_get_contents($banners_file), true) ?: []) : [];
+
 // ── BODY 코드 저장 (</body> 직전 삽입) ──
 $body_codes_file = DATA_DIR . '/body_codes.txt';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['body_codes']) && ($_SESSION['admin_auth'] ?? false)) {
@@ -323,6 +336,45 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
   <?php if (isset($_GET['del_error'])): ?>
     <div class="notice" style="background:#f8d7da; color:#721c24;">❌ 삭제 오류: <?= htmlspecialchars($_GET['del_error']) ?><br>DATA_DIR: <?= DATA_DIR ?></div>
   <?php endif; ?>
+
+  <!-- 배너 광고 관리 -->
+  <div style="background:#fff; border-radius:8px; padding:20px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <h2 style="font-size:16px; margin-bottom:4px;">📢 배너 광고 관리</h2>
+    <p style="font-size:12px; color:#888; margin-bottom:14px;">배너 이미지 URL과 클릭 링크를 입력하세요. 비워두면 해당 위치에 광고가 표시되지 않습니다.</p>
+    <?php if (isset($banners_saved)): ?>
+      <div class="notice">✅ 저장되었습니다.</div>
+    <?php endif; ?>
+    <form method="POST">
+      <!-- 사이드바 300x250 -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📌 사이드바 배너 (300×250)</label>
+        <input type="text" name="banner_sidebar[img]" value="<?= htmlspecialchars($banners['sidebar']['img'] ?? '') ?>" placeholder="이미지 URL (https://...)" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:13px; margin-bottom:6px; box-sizing:border-box;">
+        <input type="text" name="banner_sidebar[link]" value="<?= htmlspecialchars($banners['sidebar']['link'] ?? '') ?>" placeholder="클릭 링크 (https://...)" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:13px; box-sizing:border-box;">
+        <?php if (!empty($banners['sidebar']['img'])): ?>
+          <div style="margin-top:8px;"><img src="<?= htmlspecialchars($banners['sidebar']['img']) ?>" style="max-width:300px; max-height:250px; border-radius:4px; border:1px solid #eee;" onerror="this.style.display='none'"></div>
+        <?php endif; ?>
+      </div>
+      <!-- 기사 목록 728x90 -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📋 기사 목록 배너 (728×90, 5번째마다)</label>
+        <input type="text" name="banner_list[img]" value="<?= htmlspecialchars($banners['list']['img'] ?? '') ?>" placeholder="이미지 URL (https://...)" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:13px; margin-bottom:6px; box-sizing:border-box;">
+        <input type="text" name="banner_list[link]" value="<?= htmlspecialchars($banners['list']['link'] ?? '') ?>" placeholder="클릭 링크 (https://...)" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:13px; box-sizing:border-box;">
+        <?php if (!empty($banners['list']['img'])): ?>
+          <div style="margin-top:8px;"><img src="<?= htmlspecialchars($banners['list']['img']) ?>" style="max-width:100%; max-height:90px; border-radius:4px; border:1px solid #eee;" onerror="this.style.display='none'"></div>
+        <?php endif; ?>
+      </div>
+      <!-- 기사 본문 728x90 -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📄 기사 본문 배너 (728×90, 본문 하단)</label>
+        <input type="text" name="banner_article[img]" value="<?= htmlspecialchars($banners['article']['img'] ?? '') ?>" placeholder="이미지 URL (https://...)" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:13px; margin-bottom:6px; box-sizing:border-box;">
+        <input type="text" name="banner_article[link]" value="<?= htmlspecialchars($banners['article']['link'] ?? '') ?>" placeholder="클릭 링크 (https://...)" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:13px; box-sizing:border-box;">
+        <?php if (!empty($banners['article']['img'])): ?>
+          <div style="margin-top:8px;"><img src="<?= htmlspecialchars($banners['article']['img']) ?>" style="max-width:100%; max-height:90px; border-radius:4px; border:1px solid #eee;" onerror="this.style.display='none'"></div>
+        <?php endif; ?>
+      </div>
+      <button type="submit" style="padding:8px 24px; background:#1a73e8; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer;">저장</button>
+    </form>
+  </div>
 
   <!-- 히어로 배경 이미지 -->
   <div style="background:#fff; border-radius:8px; padding:20px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">

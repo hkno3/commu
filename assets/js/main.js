@@ -141,6 +141,18 @@ function appendArticleCards(newArticles, replace = false) {
   newArticles.forEach(article => {
     const card = createArticleCard(article);
     listEl.appendChild(card);
+    // 5번째 카드마다 배너 삽입
+    if (typeof BANNER_LIST !== 'undefined' && BANNER_LIST.img &&
+        listEl.querySelectorAll('.article-card').length % 5 === 0) {
+      const wrap = document.createElement('div');
+      wrap.className = 'banner-list-wrap';
+      wrap.style.cssText = 'text-align:center; margin:12px 0; overflow:hidden;';
+      const inner = `<img src="${BANNER_LIST.img}" alt="광고" style="max-width:100%;height:auto;display:inline-block;" loading="lazy">`;
+      wrap.innerHTML = BANNER_LIST.link
+        ? `<a href="${BANNER_LIST.link}" target="_blank" rel="noopener sponsored">${inner}</a>`
+        : inner;
+      listEl.appendChild(wrap);
+    }
   });
   loadCommentCounts(newArticles);
 }

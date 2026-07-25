@@ -63,3 +63,18 @@ function cat_to_filename(string $cat): string {
     ];
     return $map[$cat] ?? str_replace('/', '_', $cat);
 }
+
+function get_banners(): array {
+    $file = DATA_DIR . '/banners.json';
+    if (!file_exists($file)) return [];
+    return json_decode(file_get_contents($file), true) ?: [];
+}
+
+function banner_html(array $b, int $w, int $h): string {
+    if (empty($b['img'])) return '';
+    $img = htmlspecialchars($b['img'], ENT_QUOTES, 'UTF-8');
+    $link = htmlspecialchars($b['link'] ?? '', ENT_QUOTES, 'UTF-8');
+    $inner = "<img src=\"{$img}\" alt=\"광고\" style=\"width:{$w}px;max-width:100%;height:auto;display:block;\" loading=\"lazy\">";
+    if ($link) return "<a href=\"{$link}\" target=\"_blank\" rel=\"noopener sponsored\" style=\"display:inline-block;\">{$inner}</a>";
+    return $inner;
+}
