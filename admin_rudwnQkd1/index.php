@@ -43,6 +43,7 @@ $banners_file = DATA_DIR . '/banners.json';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['banner_sidebar']) && ($_SESSION['admin_auth'] ?? false)) {
     $banners = [
         'sidebar'          => trim($_POST['banner_sidebar'] ?? ''),
+        'list_top'         => trim($_POST['banner_list_top'] ?? ''),
         'list'             => trim($_POST['banner_list'] ?? ''),
         'article_top'      => trim($_POST['banner_article_top'] ?? ''),
         'article_middle'   => trim($_POST['banner_article_middle'] ?? ''),
@@ -352,9 +353,14 @@ h1 { font-size: 22px; margin-bottom: 24px; color: #1a73e8; }
         <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📌 사이드바 배너 (300×250)</label>
         <textarea name="banner_sidebar" rows="3" placeholder="<iframe ...> 코드 전체를 붙여넣으세요" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; box-sizing:border-box;"><?= htmlspecialchars($banners['sidebar'] ?? '') ?></textarea>
       </div>
-      <!-- 기사 목록 728x90 -->
+      <!-- 기사 목록 상단 728x90 -->
       <div style="margin-bottom:16px;">
-        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📋 기사 목록 배너 (728×90, 5번째 카드마다)</label>
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📋 기사 목록 상단 배너 (728×90)</label>
+        <textarea name="banner_list_top" rows="3" placeholder="<iframe ...> 코드 전체를 붙여넣으세요" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; box-sizing:border-box;"><?= htmlspecialchars($banners['list_top'] ?? '') ?></textarea>
+      </div>
+      <!-- 기사 목록 사이 728x90 -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">📋 기사 목록 중간 배너 (728×90, 5번째 카드마다)</label>
         <textarea name="banner_list" rows="3" placeholder="<iframe ...> 코드 전체를 붙여넣으세요" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; box-sizing:border-box;"><?= htmlspecialchars($banners['list'] ?? '') ?></textarea>
       </div>
       <!-- 기사 본문 상단 -->
