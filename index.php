@@ -101,6 +101,9 @@ $hero_bg_url     = $hero_image_url ?: $default_hero;
 
     <!-- 왼쪽: 기사 목록 -->
     <div class="index-article-col">
+      <?php if (!empty($__b['list_top'])): ?>
+      <div class="banner-wrap"><?= banner_html($__b['list_top']) ?></div>
+      <?php endif; ?>
       <div class="article-list" id="article-list">
         <div class="loading">기사 불러오는 중...</div>
       </div>
@@ -177,7 +180,35 @@ $hero_bg_url     = $hero_image_url ?: $default_hero;
 <?php $__b = get_banners(); ?>
 <script>
 const INITIAL_CATEGORY = <?= json_encode($initial_cat) ?>;
-const BANNER_LIST_CODE = <?= json_encode($__b['list'] ?? '') ?>;
+const BANNER_LIST_MIDS = <?= json_encode([
+    5  => $__b['list_mid1'] ?? '',
+    10 => $__b['list_mid2'] ?? '',
+    15 => $__b['list_mid3'] ?? '',
+    20 => $__b['list_mid4'] ?? '',
+]) ?>;
+</script>
+<script>
+// 목록 상단 배너 모바일 축소
+(function() {
+  function scaleBanners() {
+    document.querySelectorAll('.banner-wrap iframe').forEach(function(f) {
+      const w = parseInt(f.getAttribute('width'));
+      if (!w) return;
+      const parent = f.parentElement.offsetWidth;
+      if (parent > 0 && parent < w) {
+        const scale = parent / w;
+        f.style.transform = 'scale(' + scale + ')';
+        f.style.transformOrigin = 'top left';
+        f.parentElement.style.height = (parseInt(f.getAttribute('height') || 90) * scale) + 'px';
+      } else {
+        f.style.transform = '';
+        f.parentElement.style.height = '';
+      }
+    });
+  }
+  document.addEventListener('DOMContentLoaded', scaleBanners);
+  window.addEventListener('resize', scaleBanners);
+})();
 </script>
 <script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/assets/js/main.js') ?: time() ?>"></script>
 
