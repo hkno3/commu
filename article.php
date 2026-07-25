@@ -313,6 +313,19 @@ try {
           <h1><?= $title ?></h1>
         </div>
 
+        <?php
+        $__banners = get_banners();
+
+        // 본문을 h2 기준으로 반으로 나누기 (중단 배너용)
+        $__parts = preg_split('/(?=<h2[\s>])/i', $content_html, 2);
+        $__content_top    = $__parts[0] ?? $content_html;
+        $__content_bottom = $__parts[1] ?? '';
+        ?>
+
+        <?php if (!empty($__banners['article_top'])): ?>
+        <div class="banner-wrap"><?= banner_html($__banners['article_top']) ?></div>
+        <?php endif; ?>
+
         <?php if (!empty($article['image_url'])): ?>
         <div class="article-thumb">
           <img src="<?= htmlspecialchars($article['image_url'], ENT_QUOTES, 'UTF-8') ?>"
@@ -323,7 +336,11 @@ try {
         <?php endif; ?>
 
         <div class="article-body">
-          <?= $content_html ?>
+          <?= $__content_top ?>
+          <?php if ($__content_bottom && !empty($__banners['article_middle'])): ?>
+          <div class="banner-wrap"><?= banner_html($__banners['article_middle']) ?></div>
+          <?php endif; ?>
+          <?= $__content_bottom ?>
         </div>
 
         <!-- Share buttons -->
@@ -367,11 +384,9 @@ try {
         <!-- AdSense Rectangle -->
         <!-- <ins class="adsbygoogle" style="display:block; margin:20px 0;" data-ad-client="<?= ADSENSE_PUBLISHER_ID ?>" data-ad-slot="XXXXXXXXXX" data-ad-format="rectangle"></ins> -->
 
-        <!-- 배너 광고 728x90 -->
-        <?php $__art_code = get_banners()['article'] ?? ''; if ($__art_code): ?>
-        <div style="text-align:center; margin:24px 0; overflow:hidden;">
-          <?= banner_html($__art_code) ?>
-        </div>
+        <!-- 기사 본문 하단 배너 -->
+        <?php if (!empty($__banners['article_bottom'])): ?>
+        <div class="banner-wrap"><?= banner_html($__banners['article_bottom']) ?></div>
         <?php endif; ?>
 
         <!-- Related / Back navigation -->
@@ -491,6 +506,25 @@ try {
     if (typeof buildCategoryNav === 'function') {
       buildCategoryNav();
     }
+    // 모바일에서 배너 iframe 자동 축소
+    function scaleBanners() {
+      document.querySelectorAll('.banner-wrap iframe').forEach(function(f) {
+        const w = f.getAttribute('width');
+        if (!w) return;
+        const parent = f.parentElement.offsetWidth;
+        if (parent < parseInt(w)) {
+          const scale = parent / parseInt(w);
+          f.style.transform = 'scale(' + scale + ')';
+          f.style.transformOrigin = 'top left';
+          f.parentElement.style.height = (parseInt(f.getAttribute('height') || 90) * scale) + 'px';
+        } else {
+          f.style.transform = '';
+          f.parentElement.style.height = '';
+        }
+      });
+    }
+    scaleBanners();
+    window.addEventListener('resize', scaleBanners);
   });
 </script>
 <?php include __DIR__ . '/includes/body_codes.php'; ?>
