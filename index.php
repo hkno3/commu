@@ -187,29 +187,7 @@ const BANNER_LIST_MIDS = <?= json_encode([
     20 => $__b['list_mid4'] ?? '',
 ]) ?>;
 </script>
-<script>
-// 목록 상단 배너 모바일 축소
-(function() {
-  function scaleBanners() {
-    document.querySelectorAll('.banner-wrap iframe').forEach(function(f) {
-      const w = parseInt(f.getAttribute('width'));
-      if (!w) return;
-      const parent = f.parentElement.offsetWidth;
-      if (parent > 0 && parent < w) {
-        const scale = parent / w;
-        f.style.transform = 'scale(' + scale + ')';
-        f.style.transformOrigin = 'top left';
-        f.parentElement.style.height = (parseInt(f.getAttribute('height') || 90) * scale) + 'px';
-      } else {
-        f.style.transform = '';
-        f.parentElement.style.height = '';
-      }
-    });
-  }
-  document.addEventListener('DOMContentLoaded', scaleBanners);
-  window.addEventListener('resize', scaleBanners);
-})();
-</script>
+<?php include __DIR__ . '/includes/banner_scale.php'; ?>
 <script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/assets/js/main.js') ?: time() ?>"></script>
 
 <footer class="site-footer">
