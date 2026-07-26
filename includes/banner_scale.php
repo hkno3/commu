@@ -10,6 +10,11 @@
     if (!iw || !ih) return;
 
     var available = wrap.offsetWidth;
+    if (!available) {
+      var p = wrap.parentElement;
+      while (p && !p.offsetWidth) p = p.parentElement;
+      available = p ? p.offsetWidth : 0;
+    }
     if (!available) return;
 
     if (available >= iw) {
