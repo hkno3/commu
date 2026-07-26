@@ -490,15 +490,19 @@ header {
 
 /* ── Banner wrapper (responsive) ── */
 .banner-wrap {
-  text-align: center;
+  text-align: left;
   margin: 16px 0;
   overflow: hidden;
-  width: 100%;
+  max-width: 100%;
   display: block;
 }
 .banner-wrap iframe {
   display: block;
   border: 0;
+  max-width: none; /* JS가 transform으로 제어 */
+}
+.article-panel, .article-body, .shorts-container {
+  overflow-x: hidden;
 }
 @media (max-width: 768px) {
   .banner-wrap iframe {
