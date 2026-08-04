@@ -670,27 +670,7 @@ def main():
         else:
             final_category = CAT_MERGE_MAP.get(category, category)
 
-        image_search_keyword = rewritten.get("image_keyword") or final_category
-        print(f"[이미지 검색] 키워드: '{image_search_keyword}' (Gemini 추출: '{rewritten.get('image_keyword')}')")
-        image_url = search_unsplash_image(image_search_keyword, rewritten["title"])
-
-        # 1차 검색 실패 시 폴백: 콤마/공백으로 쪼갠 첫 구절 → 카테고리 영문 키워드 순으로 재시도
-        if not image_url:
-            fallback_keywords = []
-            first_chunk = re.split(r"[,/]", image_search_keyword)[0].strip()
-            if first_chunk and first_chunk.lower() != image_search_keyword.lower():
-                fallback_keywords.append(first_chunk)
-            cat_fallback = CAT_IMAGE_FALLBACK.get(final_category)
-            if cat_fallback:
-                fallback_keywords.append(cat_fallback)
-
-            for fb_keyword in fallback_keywords:
-                print(f"[이미지 검색] 1차 검색 실패, 폴백 키워드로 재시도: '{fb_keyword}'")
-                image_url = search_unsplash_image(fb_keyword, rewritten["title"])
-                if image_url:
-                    break
-
-        print(f"[이미지 검색 결과] {'찾음 → ' + image_url if image_url else '못 찾음 (image_url=None)'}")
+        image_url = None  # 외부 이미지 검색 제거 (잘못된 이미지 방지 — 프론트엔드 플레이스홀더 사용)
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
         now_kst = datetime.now(KST)
