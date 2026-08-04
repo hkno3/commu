@@ -61,11 +61,25 @@ if (!$article) {
     try {
         require_once __DIR__ . '/db/init.php';
         $pdo = db_connect();
-        $stmt = $pdo->prepare(
-            "SELECT article_id, title, summary, content, image_url, image_credit, image_source, url, source, category, pub_date
-             FROM article_cache WHERE article_id = ? LIMIT 1"
-        );
-        $stmt->execute([$article_id]);
+        // image_credit/image_source 컬럼이 없는 구버전 DB 호환
+        try {
+            $stmt = $pdo->prepare(
+                "SELECT article_id, title, summary, content, image_url,
+                        IFNULL(image_credit, '') AS image_credit,
+                        IFNULL(image_source, '') AS image_source,
+                        url, source, category, pub_date
+                 FROM article_cache WHERE article_id = ? LIMIT 1"
+            );
+            $stmt->execute([$article_id]);
+        } catch (Exception $e2) {
+            // 컬럼 없으면 기본 쿼리로 재시도
+            $stmt = $pdo->prepare(
+                "SELECT article_id, title, summary, content, image_url,
+                        url, source, category, pub_date
+                 FROM article_cache WHERE article_id = ? LIMIT 1"
+            );
+            $stmt->execute([$article_id]);
+        }
         $row = $stmt->fetch();
         if ($row) {
             $article = [

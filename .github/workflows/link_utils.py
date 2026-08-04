@@ -10,8 +10,8 @@ import random
 from urllib.parse import unquote
 
 # repo 루트 기준 절대 경로 (스크립트 위치에 무관하게 동작)
-_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-_REPO_ROOT = os.path.dirname(_SCRIPT_DIR)  # .github/workflows/../ = repo root
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))  # .github/workflows/
+_REPO_ROOT = os.path.dirname(os.path.dirname(_SCRIPT_DIR))  # .github/workflows/../../ = repo root
 LINKS_CACHE_PATH = os.path.join(_REPO_ROOT, "links_cache.json")
 
 STOPWORDS = {
