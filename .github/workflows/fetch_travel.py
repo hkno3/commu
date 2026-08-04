@@ -245,6 +245,44 @@ def search_fallback_image(keyword: str) -> str:
     return ""
 
 
+def insert_content_images(content_html: str, image_urls: list) -> str:
+    """h2 섹션 시작 직전에 KTO 이미지를 순서대로 삽입 (최대 4장)"""
+    if not image_urls:
+        return content_html
+
+    def make_img_tag(url: str) -> str:
+        safe = url.replace('"', "&quot;")
+        return (
+            f'\n<figure style="margin:24px 0; text-align:center;">'
+            f'<img src="{safe}" alt="한국관광공사 제공 이미지" '
+            f'style="max-width:100%; border-radius:8px;" '
+            f'onerror="this.parentElement.style.display=\'none\'">'
+            f'<figcaption style="font-size:12px; color:#888; margin-top:6px;">'
+            f'사진 제공: <a href="https://www.visitkorea.or.kr" target="_blank" rel="noopener">한국관광공사</a>'
+            f'</figcaption></figure>\n'
+        )
+
+    # h2 기준으로 분할
+    parts = re.split(r'(?=<h2[\s>])', content_html, flags=re.IGNORECASE)
+    if len(parts) < 2:
+        # h2가 없으면 끝에 추가
+        result = content_html
+        for url in image_urls[:4]:
+            result += make_img_tag(url)
+        return result
+
+    result = parts[0]
+    img_idx = 0
+    for i, part in enumerate(parts[1:], 1):
+        result += part
+        # 2번째 h2부터 삽입 (1번째는 소개 섹션이라 썸네일과 겹침)
+        if i >= 2 and img_idx < len(image_urls) and img_idx < 4:
+            result += make_img_tag(image_urls[img_idx])
+            img_idx += 1
+
+    return result
+
+
 # ---------------------------------------------------------------------------
 # KTO에서 발행할 콘텐츠 선택
 # ---------------------------------------------------------------------------
@@ -551,13 +589,17 @@ def main():
         if fi and fi not in img_candidates:
             img_candidates.append(fi)
 
+    img_candidates = [u for u in img_candidates if u]
     if img_candidates:
-        image_url = random.choice([u for u in img_candidates if u])
+        random.shuffle(img_candidates)
+        image_url    = img_candidates[0]          # 썸네일
+        extra_images = img_candidates[1:]         # 본문 삽입용 나머지
         image_source = "kto"
-        print(f"  이미지: KTO 공식 ({len(img_candidates)}개 중 랜덤)")
+        print(f"  이미지: KTO 공식 총 {len(img_candidates)}장 (썸네일 1 + 본문 {len(extra_images)})")
     else:
         # 폴백: Unsplash/Pixabay/Pexels
-        image_url = search_fallback_image(title)
+        image_url    = search_fallback_image(title)
+        extra_images = []
         image_source = "stock" if image_url else ""
         print(f"  이미지: {'Unsplash/Pixabay/Pexels' if image_url else '없음'}")
 
@@ -583,7 +625,8 @@ def main():
         "title":            result["title"],
         "summary":          result["summary"],
         "content":          insert_related_buttons(
-                                result["content"], links_cache,
+                                insert_content_images(result["content"], extra_images),
+                                links_cache,
                                 result["title"], result.get("summary", "")
                             ),
         "image_url":        image_url,
