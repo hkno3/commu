@@ -27,7 +27,7 @@ UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
 PIXABAY_API_KEY     = os.environ.get("PIXABAY_API_KEY", "")
 PEXELS_API_KEY      = os.environ.get("PEXELS_API_KEY", "")
 SAVE_SECRET         = os.environ.get("SAVE_SECRET", "nc_save_s3cr3t_2026")
-SAVE_API_URL        = "https://newscommu.com/api/save_article.php"
+SAVE_API_URL        = "http://172.105.235.119/api/save_article.php"
 
 DATA_DIR    = "data"
 TRAVEL_FILE = os.path.join(DATA_DIR, "travelguide.json")
@@ -662,7 +662,7 @@ def main():
         r = requests.post(
             SAVE_API_URL,
             json=article,
-            headers={"X-Save-Secret": SAVE_SECRET, "Content-Type": "application/json"},
+            headers={"X-Save-Secret": SAVE_SECRET, "Content-Type": "application/json", "Host": "newscommu.com"},
             timeout=15,
         )
         print(f"  DB: {'완료' if r.status_code == 200 else '실패 ' + str(r.status_code)}")
