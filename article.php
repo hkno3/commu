@@ -139,7 +139,9 @@ $summary     = htmlspecialchars($article['summary'] ?? '', ENT_QUOTES, 'UTF-8');
 $raw_content = $article['content'] ?? '';
 if ($raw_content) {
     // 여행지 가이드는 markdown→HTML로 이미 정제된 콘텐츠 → strip/DOM 정규화 불필요
-    $is_travel = ($article['article_type'] ?? '') === 'travel_guide';
+    $is_travel = ($article['article_type'] ?? '') === 'travel_guide'
+                 || ($article['category'] ?? '') === '여행지'
+                 || ($article['category_label'] ?? '') === '여행지';
 
     if ($is_travel) {
         $content_html = $raw_content;
