@@ -2,11 +2,13 @@
 """
 여행지 소개 — AI 여행 가이드 생성기
 2시간마다 1개 여행지 가이드 기사를 생성한다.
-이미지: 한국관광공사 공식 API 우선, 없으면 Unsplash 폴백
+이미지: 한국관광공사 공식 API 우선, 없으면 Wikimedia Commons 폴백
 """
 
 import os
 import json
+import re
+import random
 import hashlib
 import time
 import requests
@@ -18,7 +20,6 @@ KST = timezone(timedelta(hours=9))
 
 GEMINI_API_KEY     = os.environ.get("GEMINI_API_KEY_3", "")
 KTO_API_KEY        = os.environ.get("KTO_API_KEY", "")          # 한국관광공사 API
-UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
 SAVE_SECRET        = os.environ.get("SAVE_SECRET", "nc_save_s3cr3t_2026")
 SAVE_API_URL       = "https://newscommu.com/api/save_article.php"
 
@@ -322,38 +323,67 @@ def get_kto_image(keyword: str) -> dict:
     return empty
 
 
-def get_unsplash_image(keyword: str) -> dict:
-    """Unsplash 이미지 (KTO 폴백)"""
+def get_wikimedia_image(keyword: str) -> dict:
+    """Wikimedia Commons 이미지 — CC0/CC BY/CC BY-SA만 허용 (NC/ND 제외)"""
     empty = {"url": "", "credit": ""}
-    if not UNSPLASH_ACCESS_KEY:
-        return empty
     for kw in [keyword, "travel landscape scenic"]:
         try:
-            r = requests.get(
-                "https://api.unsplash.com/search/photos",
-                params={"query": kw, "per_page": 5, "orientation": "landscape"},
-                headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
-                timeout=10,
+            resp = requests.get(
+                "https://commons.wikimedia.org/w/api.php",
+                params={
+                    "action": "query",
+                    "generator": "search",
+                    "gsrnamespace": 6,
+                    "gsrsearch": kw,
+                    "gsrlimit": 20,
+                    "prop": "imageinfo",
+                    "iiprop": "url|extmetadata",
+                    "iiurlwidth": 800,
+                    "format": "json",
+                },
+                headers={"User-Agent": "newscommu.com/1.0 (across1211@gmail.com)"},
+                timeout=15,
             )
-            results = r.json().get("results", [])
-            for item in results:
-                url = item.get("urls", {}).get("regular", "")
-                if url and "plus.unsplash.com" not in url:
-                    user = item.get("user", {})
-                    return {
-                        "url": url,
-                        "photographer_name": user.get("name", ""),
-                        "photographer_url": user.get("links", {}).get("html", ""),
-                        "photo_url": item.get("links", {}).get("html", ""),
-                        "credit": "unsplash",
-                    }
-        except Exception:
-            pass
+            resp.raise_for_status()
+            pages = resp.json().get("query", {}).get("pages", {})
+            candidates = []
+            for page in pages.values():
+                info_list = page.get("imageinfo", [])
+                if not info_list:
+                    continue
+                info = info_list[0]
+                meta = info.get("extmetadata", {})
+                license_name = meta.get("LicenseShortName", {}).get("value", "")
+                if not license_name:
+                    continue
+                ln_upper = license_name.upper()
+                if "NC" in ln_upper or "ND" in ln_upper:
+                    continue
+                image_url = info.get("thumburl") or info.get("url", "")
+                if not image_url:
+                    continue
+                if not re.search(r"\.(jpe?g|png|webp)", image_url, re.IGNORECASE):
+                    continue
+                artist = re.sub(r"<[^>]+>", "", meta.get("Artist", {}).get("value", "")).strip()
+                is_free = any(x in ln_upper for x in ["CC0", "PUBLIC DOMAIN", "PD"])
+                credit_text = None if is_free else (
+                    f"{artist} ({license_name})" if artist else license_name
+                )
+                candidates.append({"url": image_url, "credit_text": credit_text, "license": license_name})
+            if candidates:
+                chosen = random.choice(candidates)
+                return {
+                    "url": chosen["url"],
+                    "credit_text": chosen["credit_text"],
+                    "credit": "wikimedia",
+                }
+        except Exception as e:
+            print(f"  [Wikimedia] 오류: {e}")
     return empty
 
 
 def get_best_image(destination: str) -> dict:
-    """KTO 우선, 없으면 Unsplash"""
+    """KTO 우선, 없으면 Wikimedia Commons"""
     # 국내 여행지는 KTO 먼저
     is_domestic = not any(w in destination for w in [
         "일본", "태국", "베트남", "필리핀", "인도네시아", "대만", "홍콩", "마카오",
@@ -373,9 +403,9 @@ def get_best_image(destination: str) -> dict:
             print(f"  이미지: KTO 공식 ({search_kw})")
             return img
 
-    img = get_unsplash_image(search_kw)
+    img = get_wikimedia_image(search_kw)
     if img["url"]:
-        print(f"  이미지: Unsplash ({img.get('photographer_name', '')})")
+        print(f"  이미지: Wikimedia Commons ({img.get('credit_text', 'CC0')})")
         return img
 
     print("  이미지: 없음")
@@ -397,27 +427,42 @@ TRAVEL_PROMPT = """당신은 한국어 여행 전문 작가입니다. '{destinat
 - 총 1200자 이상의 풍부한 내용
 - 마크다운 형식으로 작성
 
-**출력 형식 (반드시 이 순서대로):**
+**출력 형식 (반드시 이 순서대로, h2/h3 구조 필수):**
 
-## {destination} 완벽 여행 가이드
-
-### ✈️ 여행지 소개
+## ✈️ {destination} 소개
 (이 여행지의 매력과 특징, 어떤 여행자에게 추천하는지 200자 이상)
 
 ### 🗓️ 최적 여행 시기
 (월별 날씨와 추천 시기, 성수기·비수기 정보)
 
-### 🏛️ 꼭 가봐야 할 명소 TOP 5
-1. **명소명**: 설명
-2. **명소명**: 설명
-3. **명소명**: 설명
-4. **명소명**: 설명
-5. **명소명**: 설명
+## 🏛️ 꼭 가봐야 할 명소
 
-### 🍜 현지 음식 & 맛집
-(꼭 먹어봐야 할 음식 3~5가지와 추천 먹는 방법)
+### 명소 1: (명소명)
+(구체적인 설명, 관람 팁, 소요 시간)
 
-### 💰 예산 가이드
+### 명소 2: (명소명)
+(구체적인 설명, 관람 팁, 소요 시간)
+
+### 명소 3: (명소명)
+(구체적인 설명, 관람 팁, 소요 시간)
+
+### 명소 4: (명소명)
+(구체적인 설명, 관람 팁, 소요 시간)
+
+### 명소 5: (명소명)
+(구체적인 설명, 관람 팁, 소요 시간)
+
+## 🍜 음식 & 맛집
+
+### 꼭 먹어봐야 할 음식
+(대표 음식 3~5가지와 추천 먹는 방법)
+
+### 추천 식당 & 먹거리 거리
+(구체적인 장소나 지역 추천)
+
+## 💰 예산 & 교통
+
+### 예산 가이드
 
 | 항목 | 예산 (1인 기준) |
 |------|----------------|
@@ -430,23 +475,42 @@ TRAVEL_PROMPT = """당신은 한국어 여행 전문 작가입니다. '{destinat
 ### 🚌 교통 & 이동
 (현지에서 이동하는 방법, 출발지에서 도착까지)
 
-### 💡 알아두면 좋은 팁
+## 💡 알아두면 좋은 팁
 
 <details>
 <summary>현지 유용한 정보</summary>
-언어, 환전, 유심, 필수 앱, 짐싸기 팁
+
+- **언어**: (현지 언어 간단 소개, 영어 통용 여부)
+- **환전**: (환전 방법, 추천 환율, 카드 사용 가능 여부)
+- **유심/데이터**: (현지 유심 구매 방법, 추천 통신사)
+- **필수 앱**: (지도, 교통, 번역 등 꼭 필요한 앱)
+- **짐싸기 팁**: (날씨·문화에 맞는 필수 준비물)
+
 </details>
 
 <details>
 <summary>주의사항 & 안전 팁</summary>
-현지에서 주의해야 할 점, 안전 수칙
+
+- **치안**: (안전한 지역과 주의할 지역)
+- **문화 예절**: (현지에서 지켜야 할 예절과 금기사항)
+- **건강**: (식수, 음식 주의사항, 예방접종 여부)
+- **긴급 연락처**: (대사관, 경찰, 병원 번호)
+
 </details>
 
-### ⭐ 추천 일정 (3박 4일 기준)
-**1일차**: ...
-**2일차**: ...
-**3일차**: ...
-**4일차**: ...
+## ⭐ 추천 일정
+
+### 1일차
+(오전·오후·저녁 일정 구체적으로)
+
+### 2일차
+(오전·오후·저녁 일정 구체적으로)
+
+### 3일차
+(오전·오후·저녁 일정 구체적으로)
+
+### 4일차
+(오전·오후·저녁 일정, 귀국 준비)
 
 ---
 주의: 생각 과정(thinking)은 출력하지 마세요. 완성된 글만 출력하세요."""
@@ -540,7 +604,9 @@ def main():
     pub_date = now.strftime("%Y-%m-%dT%H:%M:%S+09:00")
 
     # 이미지 출처 필드 구성
-    is_kto = img.get("credit") == "한국관광공사"
+    img_credit_type = img.get("credit", "")
+    is_kto = img_credit_type == "한국관광공사"
+    is_wikimedia = img_credit_type == "wikimedia"
     slug = DEST_SLUG.get(destination, "")
     if not slug:
         slug = "travel-" + article_id.replace("travel_", "")
@@ -552,10 +618,10 @@ def main():
         "summary":             result["summary"],
         "content":             result["content"],
         "image_url":           img.get("url", ""),
-        "image_credit_name":   "한국관광공사" if is_kto else img.get("photographer_name", ""),
-        "image_credit_url":    "https://www.visitkorea.or.kr" if is_kto else img.get("photographer_url", ""),
-        "image_photo_url":     "" if is_kto else img.get("photo_url", ""),
-        "image_source":        "kto" if is_kto else "unsplash",
+        "image_credit":        img.get("credit_text", "") if is_wikimedia else "",
+        "image_credit_name":   "한국관광공사" if is_kto else "",
+        "image_credit_url":    "https://www.visitkorea.or.kr" if is_kto else "",
+        "image_source":        "kto" if is_kto else ("wikimedia" if is_wikimedia else ""),
         "category":            "여행지",
         "category_label":      "여행지",
         "article_type":        "travel_guide",
