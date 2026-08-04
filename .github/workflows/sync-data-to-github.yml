@@ -1,0 +1,54 @@
+name: Sync Data Files to GitHub
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download data files from FTP
+        run: |
+          python - <<'EOF'
+          import ftplib, os
+
+          HOST = "ftp.bizachieve.com"
+          USER = "newscommu@newscommu.com"
+          PASS = "${{ secrets.FTP_PASSWORD }}"
+
+          os.makedirs("data", exist_ok=True)
+
+          try:
+              ftp = ftplib.FTP(HOST)
+              ftp.login(USER, PASS)
+              entries = ftp.nlst("data")
+              for fpath in entries:
+                  fname = os.path.basename(fpath)
+                  if fname.endswith(".json"):
+                      local = f"data/{fname}"
+                      try:
+                          with open(local, "wb") as fp:
+                              ftp.retrbinary(f"RETR data/{fname}", fp.write)
+                          print(f"Downloaded: {local}")
+                      except Exception as e:
+                          print(f"Skip {local}: {e}")
+              ftp.quit()
+          except Exception as e:
+              print(f"FTP error: {e}")
+          EOF
+
+      - name: Commit data files to GitHub
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "sync: backup current server data files to GitHub"
+          git push
