@@ -20,7 +20,7 @@ jobs:
           python - <<'EOF'
           import ftplib, os
 
-          HOST = "ftp.bizachieve.com"
+          HOST = "172.105.235.119"
           USER = "newscommu@newscommu.com"
           PASS = "${{ secrets.FTP_PASSWORD }}"
 
