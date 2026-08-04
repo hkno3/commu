@@ -283,8 +283,9 @@ def get_kto_image(keyword: str) -> dict:
         if not item_list:
             return empty
 
-        # 첫 번째 결과의 대표 이미지
-        first = item_list[0]
+        # 이미지 있는 항목 우선 선택, 없으면 랜덤
+        candidates = [i for i in item_list if i.get("firstimage") or i.get("firstimage2")]
+        first = random.choice(candidates) if candidates else random.choice(item_list)
         img_url = first.get("firstimage", "") or first.get("firstimage2", "")
         if img_url:
             return {
