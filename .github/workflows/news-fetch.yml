@@ -44,18 +44,17 @@ jobs:
                       print(f"Skip {f}: {e}")
               # Download category json files
               try:
-                  ftp.cwd("data")
-                  files = ftp.nlst()
-                  ftp.cwd("..")
-                  for fname in files:
+                  entries = ftp.nlst("data")
+                  for fpath in entries:
+                      fname = os.path.basename(fpath)
                       if fname.endswith(".json") and fname not in ["published.json", "latest.json"]:
                           local = f"data/{fname}"
                           try:
                               with open(local, "wb") as fp:
-                                  ftp.retrbinary(f"RETR data/{fname}", fp.write)
-                              print(f"Downloaded: data/{fname}")
+                                  ftp.retrbinary(f"RETR {fpath}", fp.write)
+                              print(f"Downloaded: {local}")
                           except Exception as e:
-                              print(f"Skip data/{fname}: {e}")
+                              print(f"Skip {local}: {e}")
               except Exception as e:
                   print(f"data dir error: {e}")
               ftp.quit()
