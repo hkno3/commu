@@ -31,21 +31,20 @@ jobs:
 
           os.makedirs("data", exist_ok=True)
 
-          FILES = [
-              "data/travelguide.json",
-              "data/latest.json",
-          ]
-
           try:
               ftp = ftplib.FTP(HOST)
               ftp.login(USER, PASS)
-              for f in FILES:
-                  try:
-                      with open(f, "wb") as fp:
-                          ftp.retrbinary(f"RETR {f}", fp.write)
-                      print(f"Downloaded: {f}")
-                  except Exception as e:
-                      print(f"Skip {f}: {e}")
+              entries = ftp.nlst("data")
+              for fpath in entries:
+                  fname = os.path.basename(fpath)
+                  if fname.endswith(".json"):
+                      local = f"data/{fname}"
+                      try:
+                          with open(local, "wb") as fp:
+                              ftp.retrbinary(f"RETR data/{fname}", fp.write)
+                          print(f"Downloaded: {local}")
+                      except Exception as e:
+                          print(f"Skip {local}: {e}")
               ftp.quit()
           except Exception as e:
               print(f"FTP error: {e}")
