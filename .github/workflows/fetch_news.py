@@ -24,6 +24,9 @@ KST = timezone(timedelta(hours=9))
 
 NAVER_CLIENT_ID = os.environ.get("NAVER_CLIENT_ID", "")
 NAVER_CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "")
+UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
+PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY", "")
+PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY", "")
 GEMINI_API_KEYS = [
     k for k in [
         os.environ.get("GEMINI_API_KEY_1", ""),
@@ -500,6 +503,82 @@ def search_wikimedia_image(keyword: str) -> tuple:
         return None, None
 
 
+def search_unsplash_image(keyword: str) -> str | None:
+    if not UNSPLASH_ACCESS_KEY or not keyword:
+        return None
+    try:
+        resp = requests.get(
+            "https://api.unsplash.com/search/photos",
+            headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
+            params={"query": keyword, "per_page": 10, "orientation": "landscape"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        results = resp.json().get("results", [])
+        print(f"[Unsplash] '{keyword}' 결과 {len(results)}건")
+        import random
+        return random.choice(results).get("urls", {}).get("regular") if results else None
+    except Exception as e:
+        print(f"[Unsplash 실패] {e}")
+        return None
+
+
+def search_pixabay_image(keyword: str) -> str | None:
+    if not PIXABAY_API_KEY or not keyword:
+        return None
+    try:
+        resp = requests.get(
+            "https://pixabay.com/api/",
+            params={"key": PIXABAY_API_KEY, "q": keyword, "image_type": "photo",
+                    "orientation": "horizontal", "per_page": 10, "safesearch": "true"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        hits = resp.json().get("hits", [])
+        print(f"[Pixabay] '{keyword}' 결과 {len(hits)}건")
+        import random
+        return random.choice(hits).get("webformatURL") if hits else None
+    except Exception as e:
+        print(f"[Pixabay 실패] {e}")
+        return None
+
+
+def search_pexels_image(keyword: str) -> str | None:
+    if not PEXELS_API_KEY or not keyword:
+        return None
+    try:
+        resp = requests.get(
+            "https://api.pexels.com/v1/search",
+            headers={"Authorization": PEXELS_API_KEY},
+            params={"query": keyword, "per_page": 10, "orientation": "landscape"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        photos = resp.json().get("photos", [])
+        print(f"[Pexels] '{keyword}' 결과 {len(photos)}건")
+        import random
+        return random.choice(photos).get("src", {}).get("large") if photos else None
+    except Exception as e:
+        print(f"[Pexels 실패] {e}")
+        return None
+
+
+def search_tech_image(keyword: str) -> tuple:
+    """IT/과학: Unsplash/Pixabay/Pexels 랜덤 순환 (출처표기 불필요)"""
+    import random
+    searchers = [
+        ("Unsplash", search_unsplash_image),
+        ("Pixabay", search_pixabay_image),
+        ("Pexels", search_pexels_image),
+    ]
+    random.shuffle(searchers)
+    for name, fn in searchers:
+        url = fn(keyword)
+        if url:
+            print(f"[이미지] {name}에서 찾음")
+            return url, None  # 출처표기 불필요
+    return None, None
+
 
 SITE_URL = "https://newscommu.com"
 
@@ -691,11 +770,17 @@ def main():
             final_category = CAT_MERGE_MAP.get(category, category)
 
         image_search_keyword = rewritten.get("image_keyword") or final_category
-        print(f"[이미지 검색] Wikimedia 키워드: '{image_search_keyword}'")
-        image_url, image_credit = search_wikimedia_image(image_search_keyword)
-        if not image_url:
-            print(f"[이미지 검색] 폴백: '{final_category}'")
-            image_url, image_credit = search_wikimedia_image(final_category)
+        if final_category == "IT/과학":
+            print(f"[이미지 검색] IT/과학 → Unsplash/Pixabay/Pexels 순환: '{image_search_keyword}'")
+            image_url, image_credit = search_tech_image(image_search_keyword)
+            if not image_url:
+                image_url, image_credit = search_tech_image("technology science")
+        else:
+            print(f"[이미지 검색] Wikimedia 키워드: '{image_search_keyword}'")
+            image_url, image_credit = search_wikimedia_image(image_search_keyword)
+            if not image_url:
+                print(f"[이미지 검색] 폴백: '{final_category}'")
+                image_url, image_credit = search_wikimedia_image(final_category)
         print(f"[이미지 검색 결과] {'찾음' if image_url else '못 찾음'} / 출처: {image_credit}")
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
