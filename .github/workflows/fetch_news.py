@@ -28,8 +28,6 @@ GEMINI_API_KEYS = [
     ] if k
 ]
 NAVER_API_URL = "https://openapi.naver.com/v1/search/news.json"
-UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
-UNSPLASH_SEARCH_URL = "https://api.unsplash.com/search/photos"
 
 CATEGORIES = [
     "정치", "경제", "사회", "생활/문화", "IT/과학",
@@ -79,11 +77,6 @@ def save_article_to_db(article: dict) -> None:
         print(f"  [DB] 저장 실패 (무시): {e}")
 
 
-# 이미지 검색 실패 시 폴백용 영문 키워드 (카테고리별 보편적인 검색어)
-CAT_IMAGE_FALLBACK = {
-    "정치": "politics", "경제": "economy", "사회": "city street",
-    "생활/문화": "lifestyle", "IT/과학": "technology",
-}
 
 _CAT_LIST = "정치, 경제, 사회, 생활/문화, IT/과학"
 
@@ -433,51 +426,30 @@ def _parse_rewrite_result(result: str, original_title: str) -> dict:
     return {"title": new_title, "slug": new_slug, "summary": summary_text, "content": content_html, "category": new_category, "image_keyword": new_image_keyword}
 
 
-def search_unsplash_image(keyword: str, title: str) -> str | None:
-    """Unsplash에서 키워드로 이미지 후보를 검색하고, 기사 제목과 가장 관련성 높은 것을 선택.
-    이미지를 다운로드하지 않고 Unsplash가 제공하는 URL을 그대로 반환 (서버 용량 사용 안 함)"""
-    if not UNSPLASH_ACCESS_KEY:
-        print("[Unsplash] UNSPLASH_ACCESS_KEY가 설정되지 않음")
+def search_naver_image(keyword: str) -> str | None:
+    """네이버 이미지 검색 API로 한국 맥락에 맞는 이미지 URL 반환"""
+    if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
         return None
     if not keyword:
-        print("[Unsplash] 검색 키워드가 없음")
         return None
     try:
         resp = requests.get(
-            UNSPLASH_SEARCH_URL,
-            headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
-            params={"query": keyword, "per_page": 10, "orientation": "landscape"},
+            "https://openapi.naver.com/v1/search/image",
+            headers={
+                "X-Naver-Client-Id": NAVER_CLIENT_ID,
+                "X-Naver-Client-Secret": NAVER_CLIENT_SECRET,
+            },
+            params={"query": keyword, "display": 5, "sort": "sim", "filter": "large"},
             timeout=15,
         )
         resp.raise_for_status()
-        results = resp.json().get("results", [])
-        print(f"[Unsplash] '{keyword}' 검색 결과 {len(results)}건 (남은 호출: {resp.headers.get('X-Ratelimit-Remaining', '?')})")
-        if not results:
+        items = resp.json().get("items", [])
+        print(f"[네이버 이미지] '{keyword}' 검색 결과 {len(items)}건")
+        if not items:
             return None
-
-        title_keywords = extract_keywords(title)
-        keyword_words = {w.lower() for w in re.findall(r"[a-zA-Z]+", keyword)}
-
-        best_url = None
-        best_score = -1
-        for photo in results:
-            tags = {t.get("title", "").lower() for t in photo.get("tags", []) if t.get("title")}
-            description = (photo.get("description") or photo.get("alt_description") or "").lower()
-            desc_words = set(re.findall(r"[a-zA-Z]+", description))
-            candidate_words = tags | desc_words
-
-            score = len(candidate_words & keyword_words)
-            for kw in title_keywords:
-                if any(kw.lower() in cw or cw in kw.lower() for cw in candidate_words):
-                    score += 1
-
-            if score > best_score:
-                best_score = score
-                best_url = photo.get("urls", {}).get("regular")
-
-        return best_url
+        return items[0].get("link")
     except Exception as exc:
-        print(f"[Unsplash 검색 실패] {exc}")
+        print(f"[네이버 이미지 검색 실패] {exc}")
         return None
 
 
@@ -670,7 +642,12 @@ def main():
         else:
             final_category = CAT_MERGE_MAP.get(category, category)
 
-        image_url = None  # 외부 이미지 검색 제거 (잘못된 이미지 방지 — 프론트엔드 플레이스홀더 사용)
+        image_search_keyword = rewritten.get("image_keyword") or final_category
+        print(f"[이미지 검색] 키워드: '{image_search_keyword}'")
+        image_url = search_naver_image(image_search_keyword)
+        if not image_url:
+            image_url = search_naver_image(final_category)
+        print(f"[이미지 검색 결과] {'찾음 → ' + image_url[:60] if image_url else '못 찾음'}")
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
         now_kst = datetime.now(KST)
