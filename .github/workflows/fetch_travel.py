@@ -433,7 +433,7 @@ TRAVEL_PROMPT = """당신은 한국어 여행 전문 작가입니다. '{destinat
 
 **출력 형식 (반드시 이 순서대로, h2/h3 구조 필수):**
 
-제목: ({destination} 여행의 핵심을 담은 30자 이내 제목. 예: "서울 경복궁·인사동 완벽 가이드 — 역사와 맛을 한번에")
+제목: ({destination} 여행의 핵심을 담은 30자 이내 제목. 이모지 없이. 예: "서울 경복궁·인사동 완벽 가이드 — 역사와 맛을 한번에")
 
 ## ✈️ {destination} 소개
 (이 여행지의 매력과 특징, 어떤 여행자에게 추천하는지 200자 이상)
@@ -564,6 +564,8 @@ def generate_travel_article(destination: str) -> dict | None:
             if stripped.startswith("제목 :"):
                 title = stripped[4:].strip()
                 break
+        # 이모지 제거 (유니코드 이모지 블록)
+        title = re.sub(r'[\U0001F300-\U0001FFFF\U00002702-\U000027B0\U0000FE0F]+', '', title).strip()
 
         summary = f"{destination}의 매력을 소개하는 완벽 여행 가이드입니다."
         lines = content.splitlines()
