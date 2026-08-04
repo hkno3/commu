@@ -44,7 +44,11 @@ def load_links_cache() -> list:
             data = json.load(f)
         links = []
         for site_links in data.values():
+            if not isinstance(site_links, list):
+                continue
             for item in site_links:
+                if not isinstance(item, dict):
+                    continue
                 title = unquote(item.get("t", "")).strip()
                 url = item.get("u", "").strip()
                 if title and url:
