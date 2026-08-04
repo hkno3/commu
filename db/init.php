@@ -25,7 +25,7 @@ function db_connect(): PDO {
     try {
         $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
     } catch (PDOException $e) {
-        throw new RuntimeException('Database connection failed.');
+        throw new RuntimeException('Database connection failed: ' . $e->getMessage());
     }
 
     return $pdo;
