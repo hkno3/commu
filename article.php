@@ -67,15 +67,17 @@ if (!$article) {
                 "SELECT article_id, title, summary, content, image_url,
                         IFNULL(image_credit, '') AS image_credit,
                         IFNULL(image_source, '') AS image_source,
-                        url, source, category, pub_date
+                        IFNULL(category_label, '') AS category_label,
+                        IFNULL(article_type, 'news') AS article_type,
+                        original_url, source, category, pub_date
                  FROM article_cache WHERE article_id = ? LIMIT 1"
             );
             $stmt->execute([$article_id]);
         } catch (Exception $e2) {
-            // 컬럼 없으면 기본 쿼리로 재시도
+            // 구버전 DB 호환 (image_credit/image_source 컬럼 없음)
             $stmt = $pdo->prepare(
                 "SELECT article_id, title, summary, content, image_url,
-                        url, source, category, pub_date
+                        original_url, source, category, pub_date
                  FROM article_cache WHERE article_id = ? LIMIT 1"
             );
             $stmt->execute([$article_id]);
@@ -88,9 +90,11 @@ if (!$article) {
                 'summary'      => $row['summary'],
                 'content'      => $row['content'],
                 'image_url'    => $row['image_url'],
-                'image_credit' => $row['image_credit'] ?? '',
-                'image_source' => $row['image_source'] ?? '',
-                'original_url' => $row['url'],
+                'image_credit'   => $row['image_credit'] ?? '',
+                'image_source'   => $row['image_source'] ?? '',
+                'category_label' => $row['category_label'] ?? '',
+                'article_type'   => $row['article_type'] ?? 'news',
+                'original_url'   => $row['original_url'] ?? '',
                 'source'       => $row['source'],
                 'category'     => $row['category'],
                 'pubDate'      => $row['pub_date'],

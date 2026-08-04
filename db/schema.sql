@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS `article_cache` (
     `summary`        TEXT,
     `content`        MEDIUMTEXT,
     `image_url`      VARCHAR(2048)   NOT NULL DEFAULT '',
+    `image_credit`   VARCHAR(500)    NOT NULL DEFAULT '',
+    `image_source`   VARCHAR(50)     NOT NULL DEFAULT '',
     `original_url`   VARCHAR(2048)   NOT NULL DEFAULT '',
     `source`         VARCHAR(200)    NOT NULL DEFAULT '',
     `category`       VARCHAR(50)     NOT NULL DEFAULT '',

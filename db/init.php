@@ -25,9 +25,7 @@ function db_connect(): PDO {
     try {
         $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
     } catch (PDOException $e) {
-        // Do not expose credentials in production
-        http_response_code(500);
-        die(json_encode(['error' => 'Database connection failed.']));
+        throw new RuntimeException('Database connection failed.');
     }
 
     return $pdo;

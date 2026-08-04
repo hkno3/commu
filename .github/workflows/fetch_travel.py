@@ -433,6 +433,8 @@ TRAVEL_PROMPT = """당신은 한국어 여행 전문 작가입니다. '{destinat
 
 **출력 형식 (반드시 이 순서대로, h2/h3 구조 필수):**
 
+제목: ({destination} 여행의 핵심을 담은 30자 이내 제목. 이모지 없이. 예: "서울 경복궁·인사동 완벽 가이드 — 역사와 맛을 한번에")
+
 ## ✈️ {destination} 소개
 (이 여행지의 매력과 특징, 어떤 여행자에게 추천하는지 200자 이상)
 
@@ -555,9 +557,15 @@ def generate_travel_article(destination: str) -> dict | None:
 
         title = f"{destination} 완벽 여행 가이드"
         for line in content.splitlines():
-            if line.strip().startswith("## "):
-                title = line.strip().lstrip("#").strip()
+            stripped = line.strip()
+            if stripped.startswith("제목:"):
+                title = stripped[3:].strip()
                 break
+            if stripped.startswith("제목 :"):
+                title = stripped[4:].strip()
+                break
+        # 이모지 제거 (유니코드 이모지 블록)
+        title = re.sub(r'[\U0001F300-\U0001FFFF\U00002702-\U000027B0\U0000FE0F]+', '', title).strip()
 
         summary = f"{destination}의 매력을 소개하는 완벽 여행 가이드입니다."
         lines = content.splitlines()
@@ -570,7 +578,12 @@ def generate_travel_article(destination: str) -> dict | None:
                         break
                 break
 
-        content_html = markdown.markdown(content, extensions=["tables", "sane_lists"])
+        # 제목: 줄은 본문에서 제거
+        content_clean = "\n".join(
+            l for l in content.splitlines()
+            if not l.strip().startswith("제목:")
+        )
+        content_html = markdown.markdown(content_clean, extensions=["tables", "sane_lists"])
         return {"title": title, "summary": summary, "content": content_html}
     except Exception as e:
         print(f"  파싱 오류: {e}")
