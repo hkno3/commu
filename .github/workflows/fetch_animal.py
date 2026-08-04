@@ -142,7 +142,7 @@ def load_category_articles() -> list:
 
 def save_category_articles(articles: list):
     with open(CATEGORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(articles[:10000], f, ensure_ascii=False, indent=2)
+        json.dump(articles, f, ensure_ascii=False, indent=2)
 
 # ---------------------------------------------------------------------------
 # PubMed API
@@ -516,7 +516,7 @@ def main():
         latest = []
     latest.insert(0, new_article)
     with open(latest_path, "w", encoding="utf-8") as f:
-        json.dump(latest[:500], f, ensure_ascii=False, indent=2)
+        json.dump(latest, f, ensure_ascii=False, indent=2)
 
     print(f"[✓] 발행 완료: {new_article['title']}")
 
