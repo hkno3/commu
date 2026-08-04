@@ -770,18 +770,11 @@ def main():
             final_category = CAT_MERGE_MAP.get(category, category)
 
         image_search_keyword = rewritten.get("image_keyword") or final_category
-        if final_category == "IT/과학":
-            print(f"[이미지 검색] IT/과학 → Unsplash/Pixabay/Pexels 순환: '{image_search_keyword}'")
-            image_url, image_credit = search_tech_image(image_search_keyword)
-            if not image_url:
-                image_url, image_credit = search_tech_image("technology science")
-        else:
-            print(f"[이미지 검색] Wikimedia 키워드: '{image_search_keyword}'")
-            image_url, image_credit = search_wikimedia_image(image_search_keyword)
-            if not image_url:
-                print(f"[이미지 검색] 폴백: '{final_category}'")
-                image_url, image_credit = search_wikimedia_image(final_category)
-        print(f"[이미지 검색 결과] {'찾음' if image_url else '못 찾음'} / 출처: {image_credit}")
+        print(f"[이미지 검색] Unsplash/Pixabay/Pexels 순환: '{image_search_keyword}'")
+        image_url, image_credit = search_tech_image(image_search_keyword)
+        if not image_url:
+            image_url, image_credit = search_tech_image(final_category)
+        print(f"[이미지 검색 결과] {'찾음' if image_url else '못 찾음'}")
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
         now_kst = datetime.now(KST)
