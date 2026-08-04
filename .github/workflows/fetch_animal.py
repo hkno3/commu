@@ -508,16 +508,6 @@ def main():
     save_category_articles(existing)
     save_published(published)
 
-    # latest.json에도 추가
-    latest_path = os.path.join(DATA_DIR, "latest.json")
-    try:
-        latest = json.load(open(latest_path, encoding="utf-8")) if os.path.exists(latest_path) else []
-    except Exception:
-        latest = []
-    latest.insert(0, new_article)
-    with open(latest_path, "w", encoding="utf-8") as f:
-        json.dump(latest, f, ensure_ascii=False, indent=2)
-
     print(f"[✓] 발행 완료: {new_article['title']}")
 
 if __name__ == "__main__":
