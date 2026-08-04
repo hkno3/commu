@@ -23,7 +23,10 @@ from link_utils import load_links_cache, insert_related_buttons
 KST = timezone(timedelta(hours=9))
 
 GEMINI_API_KEY     = os.environ.get("GEMINI_API_KEY_3", "")
-KTO_API_KEY        = os.environ.get("KTO_API_KEY", "")          # 한국관광공사 API
+KTO_API_KEY        = os.environ.get("KTO_API_KEY", "")
+UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
+PIXABAY_API_KEY    = os.environ.get("PIXABAY_API_KEY", "")
+PEXELS_API_KEY     = os.environ.get("PEXELS_API_KEY", "")
 SAVE_SECRET        = os.environ.get("SAVE_SECRET", "nc_save_s3cr3t_2026")
 SAVE_API_URL       = "https://newscommu.com/api/save_article.php"
 
@@ -245,6 +248,75 @@ def pick_destination(travel_data: list) -> str:
 
 
 # ---------------------------------------------------------------------------
+# 해외 여행지 이미지: Unsplash / Pixabay / Pexels 랜덤 순환
+# ---------------------------------------------------------------------------
+
+def search_unsplash_image(keyword: str) -> str:
+    if not UNSPLASH_ACCESS_KEY:
+        return ""
+    try:
+        r = requests.get(
+            "https://api.unsplash.com/search/photos",
+            headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
+            params={"query": keyword, "per_page": 10, "orientation": "landscape"},
+            timeout=8,
+        )
+        results = r.json().get("results", [])
+        if results:
+            return random.choice(results)["urls"]["regular"]
+    except Exception:
+        pass
+    return ""
+
+
+def search_pixabay_image(keyword: str) -> str:
+    if not PIXABAY_API_KEY:
+        return ""
+    try:
+        r = requests.get(
+            "https://pixabay.com/api/",
+            params={"key": PIXABAY_API_KEY, "q": keyword, "image_type": "photo",
+                    "orientation": "horizontal", "per_page": 10, "safesearch": "true"},
+            timeout=8,
+        )
+        hits = r.json().get("hits", [])
+        if hits:
+            return random.choice(hits)["webformatURL"]
+    except Exception:
+        pass
+    return ""
+
+
+def search_pexels_image(keyword: str) -> str:
+    if not PEXELS_API_KEY:
+        return ""
+    try:
+        r = requests.get(
+            "https://api.pexels.com/v1/search",
+            headers={"Authorization": PEXELS_API_KEY},
+            params={"query": keyword, "per_page": 10, "orientation": "landscape"},
+            timeout=8,
+        )
+        photos = r.json().get("photos", [])
+        if photos:
+            return random.choice(photos)["src"]["large"]
+    except Exception:
+        pass
+    return ""
+
+
+def search_travel_image(keyword: str) -> str:
+    """Unsplash/Pixabay/Pexels 랜덤 순환으로 이미지 검색"""
+    sources = [search_unsplash_image, search_pixabay_image, search_pexels_image]
+    random.shuffle(sources)
+    for fn in sources:
+        url = fn(keyword)
+        if url:
+            return url
+    return ""
+
+
+# ---------------------------------------------------------------------------
 # 한국관광공사 API (국내 관광지 공식 이미지)
 # ---------------------------------------------------------------------------
 
@@ -388,8 +460,7 @@ def get_wikimedia_image(keyword: str) -> dict:
 
 
 def get_best_image(destination: str) -> dict:
-    """KTO 우선, 없으면 Wikimedia Commons"""
-    # 국내 여행지는 KTO 먼저
+    """국내: KTO 우선 → Unsplash/Pixabay/Pexels / 해외: Unsplash/Pixabay/Pexels → Wikimedia"""
     is_domestic = not any(w in destination for w in [
         "일본", "태국", "베트남", "필리핀", "인도네시아", "대만", "홍콩", "마카오",
         "싱가포르", "말레이시아", "터키", "그리스", "이탈리아", "프랑스", "스페인",
@@ -399,21 +470,26 @@ def get_best_image(destination: str) -> dict:
         "호주", "뉴질랜드",
     ])
 
-    # 검색 키워드: 구체적(예: "인천 소래포구") → 도시명(예: "인천") 순으로 시도
-    specific_kw = destination.split("·")[0].strip()   # "인천 소래포구"
-    city_kw     = specific_kw.split(" ")[0]            # "인천"
+    specific_kw = destination.split("·")[0].strip()
+    city_kw     = specific_kw.split(" ")[0]
 
     if is_domestic and KTO_API_KEY:
         img = get_kto_image(specific_kw)
         if img["url"]:
             print(f"  이미지: KTO 공식 ({specific_kw})")
             return img
-        # 구체적 키워드로 못 찾으면 도시명으로 재시도
         img = get_kto_image(city_kw)
         if img["url"]:
             print(f"  이미지: KTO 공식 ({city_kw})")
             return img
 
+    # 국내 KTO 실패 or 해외 → Unsplash/Pixabay/Pexels
+    url = search_travel_image(specific_kw)
+    if url:
+        print(f"  이미지: Unsplash/Pixabay/Pexels ({specific_kw})")
+        return {"url": url, "credit": ""}
+
+    # 최후 폴백: Wikimedia
     img = get_wikimedia_image(specific_kw)
     if img["url"]:
         print(f"  이미지: Wikimedia Commons ({img.get('credit_text', 'CC0')})")
