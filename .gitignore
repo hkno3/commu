@@ -1,5 +1,5 @@
-# data 폴더는 FTP로만 관리 (git 추적 안 함)
-data/
+# data 폴더 JSON은 git + FTP 이중 백업
+data/*.tmp
 .env
 *.log
 __pycache__/

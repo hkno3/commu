@@ -6,10 +6,14 @@ on:
 jobs:
   fetch-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -19,36 +23,6 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install requests markdown
-
-      - name: Download data files from server
-        run: |
-          python - <<'EOF'
-          import ftplib, os
-
-          HOST = "ftp.bizachieve.com"
-          USER = "newscommu@newscommu.com"
-          PASS = "${{ secrets.FTP_PASSWORD }}"
-
-          os.makedirs("data", exist_ok=True)
-
-          try:
-              ftp = ftplib.FTP(HOST)
-              ftp.login(USER, PASS)
-              entries = ftp.nlst("data")
-              for fpath in entries:
-                  fname = os.path.basename(fpath)
-                  if fname.endswith(".json"):
-                      local = f"data/{fname}"
-                      try:
-                          with open(local, "wb") as fp:
-                              ftp.retrbinary(f"RETR data/{fname}", fp.write)
-                          print(f"Downloaded: {local}")
-                      except Exception as e:
-                          print(f"Skip {local}: {e}")
-              ftp.quit()
-          except Exception as e:
-              print(f"FTP error: {e}")
-          EOF
 
       - name: Generate travel guide article
         env:
@@ -60,6 +34,14 @@ jobs:
           SAVE_SECRET: ${{ secrets.SAVE_SECRET }}
         run: |
           python .github/workflows/fetch_travel.py
+
+      - name: Commit data files to GitHub
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "auto: update travel data [skip ci]"
+          git push
 
       - name: Deploy to FastComet via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
