@@ -502,7 +502,7 @@ def generate_travel_article(destination: str) -> dict | None:
                         break
                 break
 
-        content_html = markdown.markdown(content, extensions=["nl2br", "tables"])
+        content_html = markdown.markdown(content, extensions=["tables", "sane_lists"])
         return {"title": title, "summary": summary, "content": content_html}
     except Exception as e:
         print(f"  파싱 오류: {e}")

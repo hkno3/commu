@@ -459,6 +459,19 @@ header {
 .article-body p {
   margin-bottom: 16px;
 }
+.article-body ul,
+.article-body ol {
+  margin: 10px 0 16px 22px;
+  line-height: 1.85;
+}
+.article-body li {
+  margin-bottom: 6px;
+}
+.article-body hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 24px 0;
+}
 
 /* ── FAQ accordion ── */
 .article-body details {
