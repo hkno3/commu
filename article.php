@@ -150,7 +150,7 @@ if ($raw_content) {
     if ($is_travel) {
         $content_html = $raw_content;
     } else {
-        $content_html = strip_tags($raw_content, '<h2><h3><p><br><strong><em><ul><ol><li><details><summary><table><thead><tbody><tr><th><td><a>');
+        $content_html = strip_tags($raw_content, '<h2><h3><p><br><strong><em><ul><ol><li><details><summary><table><thead><tbody><tr><th><td><a><style>');
 
         // 닫히지 않은 <table> 보강
         $open_count  = preg_match_all('/<table\b/i', $content_html);
