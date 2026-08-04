@@ -414,8 +414,12 @@ async function renderCategorySections() {
         <h2 class="cat-section-title" style="color:${color}">${escHtml(cat)}</h2>
         <a class="cat-section-more" href="${catUrl}">더 보기 →</a>
       </div>
-      <div class="h-scroll-row" id="hrow-${key}">
-        <div class="loading">불러오는 중...</div>
+      <div class="h-scroll-wrap">
+        <button class="h-scroll-btn prev" aria-label="이전" onclick="scrollRow('hrow-${key}',-1)" disabled>&#8592;</button>
+        <div class="h-scroll-row" id="hrow-${key}" onscroll="updateScrollBtns('hrow-${key}')">
+          <div class="loading">불러오는 중...</div>
+        </div>
+        <button class="h-scroll-btn next" aria-label="다음" onclick="scrollRow('hrow-${key}',1)">&#8594;</button>
       </div>
     `;
     container.appendChild(section);
@@ -436,6 +440,7 @@ async function fetchCategoryCards(catKey, rowId) {
       return;
     }
     data.articles.forEach(article => row.appendChild(createHCard(article)));
+    updateScrollBtns(rowId);
   } catch (e) {
     if (row) row.innerHTML = '<div class="empty-state">데이터를 불러올 수 없습니다.</div>';
   }
@@ -468,5 +473,23 @@ function createHCard(article) {
   `;
   return card;
 }
+
+function scrollRow(rowId, dir) {
+  const row = document.getElementById(rowId);
+  if (!row) return;
+  row.scrollBy({ left: dir * 680, behavior: 'smooth' });
+}
+
+function updateScrollBtns(rowId) {
+  const row = document.getElementById(rowId);
+  if (!row) return;
+  const wrap = row.parentElement;
+  const prev = wrap.querySelector('.prev');
+  const next = wrap.querySelector('.next');
+  if (prev) prev.disabled = row.scrollLeft <= 4;
+  if (next) next.disabled = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
+}
+window.scrollRow = scrollRow;
+window.updateScrollBtns = updateScrollBtns;
 
 window.submitComment = submitComment;

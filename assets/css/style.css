@@ -163,6 +163,15 @@ header {
   letter-spacing: 0.02em;
   color: var(--text);
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 /* ── Category Nav ── */
@@ -886,6 +895,33 @@ header {
 .cat-section-more:hover { color: var(--primary); }
 
 /* ── Horizontal Scroll Row ── */
+.h-scroll-wrap {
+  position: relative;
+}
+.h-scroll-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  transition: background 0.2s, opacity 0.2s;
+  color: var(--text);
+  line-height: 1;
+}
+.h-scroll-btn:hover { background: var(--primary); color: #fff; }
+.h-scroll-btn.prev { left: -14px; }
+.h-scroll-btn.next { right: -14px; }
+.h-scroll-btn[disabled] { opacity: 0; pointer-events: none; }
 .h-scroll-row {
   display: flex;
   gap: 16px;
