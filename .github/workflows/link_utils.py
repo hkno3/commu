@@ -6,6 +6,7 @@ links_cache.json에서 기사와 유사도 30% 이상인 링크를 찾아 h2 섹
 import os
 import re
 import json
+import random
 from urllib.parse import unquote
 
 LINKS_CACHE_PATH = "links_cache.json"
@@ -113,8 +114,12 @@ def insert_related_buttons(content: str, links: list, title: str, summary: str) 
     """h2 섹션 1, 2 끝 직전에 관련 링크 버튼 2개 삽입"""
     related = find_top_related_links(title + " " + summary, links, n=2)
     if not related:
-        print("[관련 링크] 유사도 30% 이상 링크 없음")
-        return content
+        print("[관련 링크] 유사도 30% 이상 링크 없음 → 랜덤 선택")
+        if links:
+            picked = random.sample(links, min(2, len(links)))
+            related = picked
+        else:
+            return content
 
     # <h2 태그 기준으로 분할 (태그 앞에서 분리)
     parts = re.split(r'(?=<h2[\s>])', content, flags=re.IGNORECASE)
