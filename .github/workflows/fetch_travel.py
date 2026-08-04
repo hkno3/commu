@@ -2,11 +2,13 @@
 """
 여행지 소개 — AI 여행 가이드 생성기
 2시간마다 1개 여행지 가이드 기사를 생성한다.
-이미지: 한국관광공사 공식 API 우선, 없으면 Unsplash 폴백
+이미지: 한국관광공사 공식 API 우선, 없으면 Wikimedia Commons 폴백
 """
 
 import os
 import json
+import re
+import random
 import hashlib
 import time
 import requests
@@ -18,7 +20,6 @@ KST = timezone(timedelta(hours=9))
 
 GEMINI_API_KEY     = os.environ.get("GEMINI_API_KEY_3", "")
 KTO_API_KEY        = os.environ.get("KTO_API_KEY", "")          # 한국관광공사 API
-UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
 SAVE_SECRET        = os.environ.get("SAVE_SECRET", "nc_save_s3cr3t_2026")
 SAVE_API_URL       = "https://newscommu.com/api/save_article.php"
 
@@ -322,38 +323,67 @@ def get_kto_image(keyword: str) -> dict:
     return empty
 
 
-def get_unsplash_image(keyword: str) -> dict:
-    """Unsplash 이미지 (KTO 폴백)"""
+def get_wikimedia_image(keyword: str) -> dict:
+    """Wikimedia Commons 이미지 — CC0/CC BY/CC BY-SA만 허용 (NC/ND 제외)"""
     empty = {"url": "", "credit": ""}
-    if not UNSPLASH_ACCESS_KEY:
-        return empty
     for kw in [keyword, "travel landscape scenic"]:
         try:
-            r = requests.get(
-                "https://api.unsplash.com/search/photos",
-                params={"query": kw, "per_page": 5, "orientation": "landscape"},
-                headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
-                timeout=10,
+            resp = requests.get(
+                "https://commons.wikimedia.org/w/api.php",
+                params={
+                    "action": "query",
+                    "generator": "search",
+                    "gsrnamespace": 6,
+                    "gsrsearch": kw,
+                    "gsrlimit": 20,
+                    "prop": "imageinfo",
+                    "iiprop": "url|extmetadata",
+                    "iiurlwidth": 800,
+                    "format": "json",
+                },
+                headers={"User-Agent": "newscommu.com/1.0 (across1211@gmail.com)"},
+                timeout=15,
             )
-            results = r.json().get("results", [])
-            for item in results:
-                url = item.get("urls", {}).get("regular", "")
-                if url and "plus.unsplash.com" not in url:
-                    user = item.get("user", {})
-                    return {
-                        "url": url,
-                        "photographer_name": user.get("name", ""),
-                        "photographer_url": user.get("links", {}).get("html", ""),
-                        "photo_url": item.get("links", {}).get("html", ""),
-                        "credit": "unsplash",
-                    }
-        except Exception:
-            pass
+            resp.raise_for_status()
+            pages = resp.json().get("query", {}).get("pages", {})
+            candidates = []
+            for page in pages.values():
+                info_list = page.get("imageinfo", [])
+                if not info_list:
+                    continue
+                info = info_list[0]
+                meta = info.get("extmetadata", {})
+                license_name = meta.get("LicenseShortName", {}).get("value", "")
+                if not license_name:
+                    continue
+                ln_upper = license_name.upper()
+                if "NC" in ln_upper or "ND" in ln_upper:
+                    continue
+                image_url = info.get("thumburl") or info.get("url", "")
+                if not image_url:
+                    continue
+                if not re.search(r"\.(jpe?g|png|webp)", image_url, re.IGNORECASE):
+                    continue
+                artist = re.sub(r"<[^>]+>", "", meta.get("Artist", {}).get("value", "")).strip()
+                is_free = any(x in ln_upper for x in ["CC0", "PUBLIC DOMAIN", "PD"])
+                credit_text = None if is_free else (
+                    f"{artist} ({license_name})" if artist else license_name
+                )
+                candidates.append({"url": image_url, "credit_text": credit_text, "license": license_name})
+            if candidates:
+                chosen = random.choice(candidates)
+                return {
+                    "url": chosen["url"],
+                    "credit_text": chosen["credit_text"],
+                    "credit": "wikimedia",
+                }
+        except Exception as e:
+            print(f"  [Wikimedia] 오류: {e}")
     return empty
 
 
 def get_best_image(destination: str) -> dict:
-    """KTO 우선, 없으면 Unsplash"""
+    """KTO 우선, 없으면 Wikimedia Commons"""
     # 국내 여행지는 KTO 먼저
     is_domestic = not any(w in destination for w in [
         "일본", "태국", "베트남", "필리핀", "인도네시아", "대만", "홍콩", "마카오",
@@ -373,9 +403,9 @@ def get_best_image(destination: str) -> dict:
             print(f"  이미지: KTO 공식 ({search_kw})")
             return img
 
-    img = get_unsplash_image(search_kw)
+    img = get_wikimedia_image(search_kw)
     if img["url"]:
-        print(f"  이미지: Unsplash ({img.get('photographer_name', '')})")
+        print(f"  이미지: Wikimedia Commons ({img.get('credit_text', 'CC0')})")
         return img
 
     print("  이미지: 없음")
@@ -540,7 +570,9 @@ def main():
     pub_date = now.strftime("%Y-%m-%dT%H:%M:%S+09:00")
 
     # 이미지 출처 필드 구성
-    is_kto = img.get("credit") == "한국관광공사"
+    img_credit_type = img.get("credit", "")
+    is_kto = img_credit_type == "한국관광공사"
+    is_wikimedia = img_credit_type == "wikimedia"
     slug = DEST_SLUG.get(destination, "")
     if not slug:
         slug = "travel-" + article_id.replace("travel_", "")
@@ -552,10 +584,10 @@ def main():
         "summary":             result["summary"],
         "content":             result["content"],
         "image_url":           img.get("url", ""),
-        "image_credit_name":   "한국관광공사" if is_kto else img.get("photographer_name", ""),
-        "image_credit_url":    "https://www.visitkorea.or.kr" if is_kto else img.get("photographer_url", ""),
-        "image_photo_url":     "" if is_kto else img.get("photo_url", ""),
-        "image_source":        "kto" if is_kto else "unsplash",
+        "image_credit":        img.get("credit_text", "") if is_wikimedia else "",
+        "image_credit_name":   "한국관광공사" if is_kto else "",
+        "image_credit_url":    "https://www.visitkorea.or.kr" if is_kto else "",
+        "image_source":        "kto" if is_kto else ("wikimedia" if is_wikimedia else ""),
         "category":            "여행지",
         "category_label":      "여행지",
         "article_type":        "travel_guide",
