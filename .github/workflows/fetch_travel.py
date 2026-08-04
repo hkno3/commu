@@ -619,7 +619,7 @@ def main():
     existing = next((a for a in travel_data if a.get("kto_content_id") == content_id), None)
     slug = existing.get("slug", "") if existing else ""
     if not slug:
-        slug = "travel-" + re.sub(r"[^a-z0-9]", "-", title.lower())[:40].strip("-")
+        slug = f"travel-{content_id}"
 
     article = {
         "article_id":       article_id,
