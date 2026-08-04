@@ -514,10 +514,12 @@ def generate_travel_article(kto_data: dict) -> dict | None:
                         break
                 break
 
-        # 제목: 줄 제거 후 HTML 변환
+        # 제목: 줄 및 마크다운 h1(# ...) 제거 후 HTML 변환
         content_clean = "\n".join(
             l for l in content.splitlines()
             if not l.strip().startswith("제목:")
+            and not l.strip().startswith("# ")
+            and l.strip() != "#"
         )
         content_html = markdown.markdown(content_clean, extensions=["tables", "sane_lists"])
         return {"title": article_title, "summary": summary, "content": content_html}
