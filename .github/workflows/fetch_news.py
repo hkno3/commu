@@ -9,6 +9,10 @@ import json
 import re
 import hashlib
 import requests
+import sys
+
+sys.path.insert(0, os.path.dirname(__file__))
+from link_utils import load_links_cache, insert_related_buttons
 
 from datetime import datetime, timezone, timedelta
 
@@ -591,6 +595,7 @@ def update_rss(all_articles: list) -> None:
 
 def main():
     os.makedirs(DATA_DIR, exist_ok=True)
+    links_cache = load_links_cache()
 
     if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
         print("[ERROR] NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 미설정")
@@ -703,7 +708,10 @@ def main():
             "slug": rewritten.get("slug") or article_id,
             "original_title": title,
             "summary": rewritten["summary"],
-            "content": rewritten.get("content", ""),
+            "content": insert_related_buttons(
+                rewritten.get("content", ""), links_cache,
+                rewritten["title"], rewritten.get("summary", "")
+            ),
             "image_url": image_url,
             "image_credit": image_credit,
             "image_source": "wikimedia" if image_url else None,
