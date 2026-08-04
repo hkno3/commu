@@ -62,7 +62,7 @@ if (!$article) {
         require_once __DIR__ . '/db/init.php';
         $pdo = db_connect();
         $stmt = $pdo->prepare(
-            "SELECT article_id, title, summary, content, image_url, url, source, category, pub_date
+            "SELECT article_id, title, summary, content, image_url, image_credit, image_source, url, source, category, pub_date
              FROM article_cache WHERE article_id = ? LIMIT 1"
         );
         $stmt->execute([$article_id]);
@@ -74,6 +74,8 @@ if (!$article) {
                 'summary'      => $row['summary'],
                 'content'      => $row['content'],
                 'image_url'    => $row['image_url'],
+                'image_credit' => $row['image_credit'] ?? '',
+                'image_source' => $row['image_source'] ?? '',
                 'original_url' => $row['url'],
                 'source'       => $row['source'],
                 'category'     => $row['category'],
@@ -342,21 +344,16 @@ try {
                alt="<?= $title ?>"
                onerror="this.parentElement.style.display='none'"
                class="article-thumb-img">
-          <?php if (!empty($article['image_credit_name'])): ?>
-          <?php $is_kto = ($article['image_source'] ?? '') === 'kto'; ?>
-          <p class="image-credit">
-            <?php if ($is_kto): ?>
-              📷 사진 출처: <a href="https://www.visitkorea.or.kr" target="_blank" rel="noopener">한국관광공사</a>
-            <?php else: ?>
-              📷 Photo by
-              <?php if (!empty($article['image_credit_url'])): ?>
-                <a href="<?= htmlspecialchars($article['image_credit_url'], ENT_QUOTES) ?>?utm_source=newscommu&utm_medium=referral" target="_blank" rel="noopener"><?= htmlspecialchars($article['image_credit_name']) ?></a>
-              <?php else: ?>
-                <?= htmlspecialchars($article['image_credit_name']) ?>
-              <?php endif; ?>
-              on <a href="https://unsplash.com/?utm_source=newscommu&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>
-            <?php endif; ?>
-          </p>
+          <?php
+            $img_source = $article['image_source'] ?? '';
+            $img_credit = $article['image_credit'] ?? $article['image_credit_name'] ?? '';
+          ?>
+          <?php if ($img_source === 'kto'): ?>
+          <p class="image-credit">📷 사진 출처: <a href="https://www.visitkorea.or.kr" target="_blank" rel="noopener">한국관광공사</a></p>
+          <?php elseif ($img_source === 'wikimedia' && !empty($img_credit)): ?>
+          <p class="image-credit">📷 <?= htmlspecialchars($img_credit, ENT_QUOTES, 'UTF-8') ?> / <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a></p>
+          <?php elseif (!empty($img_credit)): ?>
+          <p class="image-credit">📷 Photo by <?= htmlspecialchars($img_credit, ENT_QUOTES, 'UTF-8') ?></p>
           <?php endif; ?>
         </div>
         <?php endif; ?>

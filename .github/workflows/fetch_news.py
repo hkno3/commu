@@ -28,8 +28,6 @@ GEMINI_API_KEYS = [
     ] if k
 ]
 NAVER_API_URL = "https://openapi.naver.com/v1/search/news.json"
-UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
-UNSPLASH_SEARCH_URL = "https://api.unsplash.com/search/photos"
 
 CATEGORIES = [
     "정치", "경제", "사회", "생활/문화", "IT/과학",
@@ -79,11 +77,6 @@ def save_article_to_db(article: dict) -> None:
         print(f"  [DB] 저장 실패 (무시): {e}")
 
 
-# 이미지 검색 실패 시 폴백용 영문 키워드 (카테고리별 보편적인 검색어)
-CAT_IMAGE_FALLBACK = {
-    "정치": "politics", "경제": "economy", "사회": "city street",
-    "생활/문화": "lifestyle", "IT/과학": "technology",
-}
 
 _CAT_LIST = "정치, 경제, 사회, 생활/문화, IT/과학"
 
@@ -433,52 +426,74 @@ def _parse_rewrite_result(result: str, original_title: str) -> dict:
     return {"title": new_title, "slug": new_slug, "summary": summary_text, "content": content_html, "category": new_category, "image_keyword": new_image_keyword}
 
 
-def search_unsplash_image(keyword: str, title: str) -> str | None:
-    """Unsplash에서 키워드로 이미지 후보를 검색하고, 기사 제목과 가장 관련성 높은 것을 선택.
-    이미지를 다운로드하지 않고 Unsplash가 제공하는 URL을 그대로 반환 (서버 용량 사용 안 함)"""
-    if not UNSPLASH_ACCESS_KEY:
-        print("[Unsplash] UNSPLASH_ACCESS_KEY가 설정되지 않음")
-        return None
+def search_wikimedia_image(keyword: str) -> tuple:
+    """Wikimedia Commons에서 CC0/CC BY/CC BY-SA 이미지 검색 (NC/ND 제외)
+    Returns: (image_url, image_credit) — credit은 CC0이면 None
+    """
     if not keyword:
-        print("[Unsplash] 검색 키워드가 없음")
-        return None
+        return None, None
     try:
         resp = requests.get(
-            UNSPLASH_SEARCH_URL,
-            headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
-            params={"query": keyword, "per_page": 10, "orientation": "landscape"},
+            "https://commons.wikimedia.org/w/api.php",
+            params={
+                "action": "query",
+                "generator": "search",
+                "gsrnamespace": 6,
+                "gsrsearch": keyword,
+                "gsrlimit": 20,
+                "prop": "imageinfo",
+                "iiprop": "url|extmetadata",
+                "iiurlwidth": 800,
+                "format": "json",
+            },
+            headers={"User-Agent": "newscommu.com/1.0 (across1211@gmail.com)"},
             timeout=15,
         )
         resp.raise_for_status()
-        results = resp.json().get("results", [])
-        print(f"[Unsplash] '{keyword}' 검색 결과 {len(results)}건 (남은 호출: {resp.headers.get('X-Ratelimit-Remaining', '?')})")
-        if not results:
-            return None
+        pages = resp.json().get("query", {}).get("pages", {})
+        print(f"[Wikimedia] '{keyword}' 검색 결과 {len(pages)}건")
 
-        title_keywords = extract_keywords(title)
-        keyword_words = {w.lower() for w in re.findall(r"[a-zA-Z]+", keyword)}
+        candidates = []
+        for page in pages.values():
+            info_list = page.get("imageinfo", [])
+            if not info_list:
+                continue
+            info = info_list[0]
+            meta = info.get("extmetadata", {})
+            license_name = meta.get("LicenseShortName", {}).get("value", "")
 
-        best_url = None
-        best_score = -1
-        for photo in results:
-            tags = {t.get("title", "").lower() for t in photo.get("tags", []) if t.get("title")}
-            description = (photo.get("description") or photo.get("alt_description") or "").lower()
-            desc_words = set(re.findall(r"[a-zA-Z]+", description))
-            candidate_words = tags | desc_words
+            # NC, ND 포함 라이선스 제외 / 라이선스 없는 것도 제외
+            if not license_name:
+                continue
+            ln_upper = license_name.upper()
+            if "NC" in ln_upper or "ND" in ln_upper:
+                continue
 
-            score = len(candidate_words & keyword_words)
-            for kw in title_keywords:
-                if any(kw.lower() in cw or cw in kw.lower() for cw in candidate_words):
-                    score += 1
+            image_url = info.get("thumburl") or info.get("url", "")
+            if not image_url:
+                continue
+            # 비이미지 파일 제외
+            if not re.search(r"\.(jpe?g|png|webp)", image_url, re.IGNORECASE):
+                continue
 
-            if score > best_score:
-                best_score = score
-                best_url = photo.get("urls", {}).get("regular")
+            # 출처 텍스트
+            artist = re.sub(r"<[^>]+>", "", meta.get("Artist", {}).get("value", "")).strip()
+            is_free = any(x in ln_upper for x in ["CC0", "PUBLIC DOMAIN", "PD"])
+            if is_free:
+                credit = None
+            else:
+                credit = f"{artist} / Wikimedia Commons ({license_name})" if artist else f"Wikimedia Commons ({license_name})"
 
-        return best_url
+            candidates.append((image_url, credit))
+
+        if not candidates:
+            return None, None
+
+        import random
+        return random.choice(candidates)
     except Exception as exc:
-        print(f"[Unsplash 검색 실패] {exc}")
-        return None
+        print(f"[Wikimedia 검색 실패] {exc}")
+        return None, None
 
 
 
@@ -671,26 +686,12 @@ def main():
             final_category = CAT_MERGE_MAP.get(category, category)
 
         image_search_keyword = rewritten.get("image_keyword") or final_category
-        print(f"[이미지 검색] 키워드: '{image_search_keyword}' (Gemini 추출: '{rewritten.get('image_keyword')}')")
-        image_url = search_unsplash_image(image_search_keyword, rewritten["title"])
-
-        # 1차 검색 실패 시 폴백: 콤마/공백으로 쪼갠 첫 구절 → 카테고리 영문 키워드 순으로 재시도
+        print(f"[이미지 검색] Wikimedia 키워드: '{image_search_keyword}'")
+        image_url, image_credit = search_wikimedia_image(image_search_keyword)
         if not image_url:
-            fallback_keywords = []
-            first_chunk = re.split(r"[,/]", image_search_keyword)[0].strip()
-            if first_chunk and first_chunk.lower() != image_search_keyword.lower():
-                fallback_keywords.append(first_chunk)
-            cat_fallback = CAT_IMAGE_FALLBACK.get(final_category)
-            if cat_fallback:
-                fallback_keywords.append(cat_fallback)
-
-            for fb_keyword in fallback_keywords:
-                print(f"[이미지 검색] 1차 검색 실패, 폴백 키워드로 재시도: '{fb_keyword}'")
-                image_url = search_unsplash_image(fb_keyword, rewritten["title"])
-                if image_url:
-                    break
-
-        print(f"[이미지 검색 결과] {'찾음 → ' + image_url if image_url else '못 찾음 (image_url=None)'}")
+            print(f"[이미지 검색] 폴백: '{final_category}'")
+            image_url, image_credit = search_wikimedia_image(final_category)
+        print(f"[이미지 검색 결과] {'찾음' if image_url else '못 찾음'} / 출처: {image_credit}")
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
         now_kst = datetime.now(KST)
@@ -704,6 +705,8 @@ def main():
             "summary": rewritten["summary"],
             "content": rewritten.get("content", ""),
             "image_url": image_url,
+            "image_credit": image_credit,
+            "image_source": "wikimedia" if image_url else None,
             "original_url": original_url,
             "url": original_url,
             "source": source,
