@@ -31,7 +31,8 @@ try {
 
 $CAT_SLUG_MAP = [
     'politics' => '정치', 'economy' => '경제', 'society' => '사회',
-    'lifestyle' => '생활_문화', 'tech' => 'IT_과학', 'animal' => '천천히_늘자',
+    'lifestyle' => '생활_문화', 'tech' => 'IT_과학', 'animal' => '천천히_늙자',
+    'travelguide' => '여행지',
 ];
 $cat_param = $_GET['cat'] ?? '';
 $initial_cat = $CAT_SLUG_MAP[$cat_param] ?? ($cat_param ?: 'all');
@@ -46,7 +47,7 @@ $hero_bg_url     = $hero_image_url ?: $default_hero;
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= SITE_NAME ?> - 실시간 뉴스 커뮤니티</title>
+  <title><?= SITE_NAME ?> - 뉴스 &amp; 여행지 가이드</title>
   <meta name="description" content="<?= SITE_DESC ?>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
@@ -67,34 +68,51 @@ $hero_bg_url     = $hero_image_url ?: $default_hero;
   <div class="cat-nav-inner" id="cat-nav-inner"></div>
 </nav>
 
-<section class="hero-section" style="background-image: linear-gradient(rgba(20,18,16,0.78), rgba(20,18,16,0.88)), url('<?= htmlspecialchars($hero_bg_url) ?>');">
+<section class="hero-section">
   <div class="hero-inner">
-    <p class="hero-eyebrow">실시간 뉴스 커뮤니티</p>
-    <h2 class="hero-title">한국 주요 뉴스를<br>한눈에</h2>
-    <p class="hero-desc">정치·경제·사회·문화·IT까지, 핵심만 추린 최신 뉴스와<br>실시간 댓글 토론을 한 곳에서 만나보세요.</p>
-    <a href="#news-list" class="hero-cta">뉴스 바로보기 ↓</a>
+    <p class="hero-eyebrow">뉴스 &amp; 여행 커뮤니티</p>
+    <h2 class="hero-title">한국 뉴스 + 여행지 가이드<br>한눈에 만나보세요</h2>
+    <p class="hero-desc">정치·경제·사회·IT부터 AI가 직접 쓴 여행지 가이드까지</p>
+    <a href="#news-list" class="hero-cta">바로 보기 ↓</a>
   </div>
 </section>
 
-<section class="features-section">
-  <div class="features-inner">
-    <div class="feature-item">
-      <div class="feature-icon">📝</div>
-      <h3 class="feature-title">핵심 요약</h3>
-      <p class="feature-desc">긴 기사도 핵심만 골라 짧게 정리해드립니다. 바쁜 일상에서 뉴스를 빠르게.</p>
-    </div>
-    <div class="feature-item">
-      <div class="feature-icon">💬</div>
-      <h3 class="feature-title">실시간 댓글 토론</h3>
-      <p class="feature-desc">기사마다 독자들의 생생한 의견을 남기고 토론에 참여하세요.</p>
-    </div>
-    <div class="feature-item">
-      <div class="feature-icon">📂</div>
-      <h3 class="feature-title">6개 카테고리</h3>
-      <p class="feature-desc">정치·경제·사회·문화·IT·건강까지, 관심 분야만 골라서 확인하세요.</p>
-    </div>
+<div class="cat-strip">
+  <div class="cat-strip-inner">
+    <button class="cat-strip-item" onclick="switchCatStrip('all', this)">
+      <div class="cat-strip-icon">🏠</div>
+      <span>전체</span>
+    </button>
+    <button class="cat-strip-item" onclick="switchCatStrip('여행지', this)">
+      <div class="cat-strip-icon">✈️</div>
+      <span>여행지</span>
+    </button>
+    <button class="cat-strip-item" onclick="switchCatStrip('정치', this)">
+      <div class="cat-strip-icon">🏛️</div>
+      <span>정치</span>
+    </button>
+    <button class="cat-strip-item" onclick="switchCatStrip('경제', this)">
+      <div class="cat-strip-icon">💰</div>
+      <span>경제</span>
+    </button>
+    <button class="cat-strip-item" onclick="switchCatStrip('사회', this)">
+      <div class="cat-strip-icon">🗞️</div>
+      <span>사회</span>
+    </button>
+    <button class="cat-strip-item" onclick="switchCatStrip('생활_문화', this)">
+      <div class="cat-strip-icon">🎭</div>
+      <span>생활·문화</span>
+    </button>
+    <button class="cat-strip-item" onclick="switchCatStrip('IT_과학', this)">
+      <div class="cat-strip-icon">💻</div>
+      <span>IT·과학</span>
+    </button>
+    <button class="cat-strip-item" onclick="switchCatStrip('천천히_늙자', this)">
+      <div class="cat-strip-icon">🐾</div>
+      <span>천천히늙자</span>
+    </button>
   </div>
-</section>
+</div>
 
 <div class="main-wrap" id="news-list">
   <div class="main-index-layout">

@@ -1,17 +1,20 @@
 const CATEGORIES = [
-  '전체','정치','경제','사회','생활/문화','IT/과학','천천히 늙자'
+  '전체','여행지','정치','경제','사회','생활/문화','IT/과학','천천히 늙자'
 ];
 const CAT_MAP = {
-  '전체': 'all', '정치': '정치', '경제': '경제', '사회': '사회',
+  '전체': 'all', '여행지': '여행지',
+  '정치': '정치', '경제': '경제', '사회': '사회',
   '생활/문화': '생활_문화', 'IT/과학': 'IT_과학', '천천히 늙자': '천천히_늙자',
 };
 const CAT_COLORS = {
   '정치': '#7a2e2e', '경제': '#2f5d4f', '사회': '#2c4a63',
   '생활_문화': '#8a5a2e', 'IT_과학': '#2e6b66', '천천히_늙자': '#5e3d7a',
+  '여행지': '#c8415d',
 };
 const CAT_BG = {
   '정치': 'none', '경제': 'none', '사회': 'none',
   '생활_문화': 'none', 'IT_과학': 'none', '천천히_늙자': 'none',
+  '여행지': 'none',
 };
 
 // Allow category to be preset from PHP (category.php / article.php)
@@ -57,8 +60,20 @@ function buildCategoryNav() {
 
 const CAT_SLUG = {
   '정치':'politics','경제':'economy','사회':'society','생활_문화':'lifestyle',
-  'IT_과학':'tech','천천히_늙자':'animal',
+  'IT_과학':'tech','천천히_늙자':'animal','여행지':'travelguide',
 };
+
+function switchCatStrip(cat, btnEl) {
+  document.querySelectorAll('.cat-strip-item').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+  const catBtn = document.querySelector(`.cat-btn[data-cat-key="${cat}"]`);
+  if (catBtn) {
+    switchCategory(cat, catBtn);
+  } else {
+    switchCategory(cat, document.querySelector('.cat-btn') || btnEl);
+  }
+}
+window.switchCatStrip = switchCatStrip;
 
 function switchCategory(cat, btnEl) {
   currentCategory = cat;
@@ -169,16 +184,17 @@ function createArticleCard(article) {
   card.className = 'article-card' + (currentArticle?.article_id === article.article_id ? ' active' : '');
   card.dataset.id = article.article_id;
   const catKey = article.category ? article.category.replace(/\//g, '_') : '';
-  const color = CAT_COLORS[catKey] || '#1a73e8';
-  const bg    = CAT_BG[catKey]    || '#e8f0fe';
+  const color = CAT_COLORS[catKey] || '#c8415d';
+
   const imgHtml = article.image_url
-    ? `<div class="article-card-img"><img src="${escHtml(article.image_url)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`
-    : '';
+    ? `<div class="article-card-img"><img src="${escHtml(article.image_url)}" alt="${escHtml(article.title)}" loading="lazy" onerror="this.parentElement.remove()"></div>`
+    : `<div class="article-card-img article-card-img--placeholder" style="background:${color}15;"></div>`;
+
   card.innerHTML = `
     ${imgHtml}
     <div class="article-card-body">
       <div class="article-card-meta">
-        <span class="cat-badge" style="background:${bg}; color:${color};">${escHtml(article.category_label || article.category || '')}</span>
+        <span class="cat-badge" style="color:${color};">${escHtml(article.category_label || article.category || '')}</span>
         <span class="pub-date">${formatDate(article.pub_date || article.pubDate)}</span>
       </div>
       <h2>${escHtml(article.title)}</h2>

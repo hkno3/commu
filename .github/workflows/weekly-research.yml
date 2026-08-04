@@ -1,10 +1,12 @@
-name: Weekly Research Proposal and Deploy
+name: Travel Guide and Deploy
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 1 * * 1'  # 매주 월요일 KST 10:00 (UTC 01:00)
 
 jobs:
-  weekly-research:
+  travel-guide:
     runs-on: ubuntu-latest
 
     steps:
@@ -34,7 +36,6 @@ jobs:
           try:
               ftp = ftplib.FTP(HOST)
               ftp.login(USER, PASS)
-              # Download all data/*.json files to preserve existing category files
               try:
                   ftp.cwd("data")
                   files = ftp.nlst()
@@ -55,12 +56,12 @@ jobs:
               print(f"FTP error: {e}")
           EOF
 
-      - name: Generate weekly research proposal
+      - name: Generate travel guide articles
         env:
           GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
         run: |
-          python .github/workflows/fetch_weekly.py
+          python .github/workflows/fetch_travel.py
 
       - name: Deploy to FastComet via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -77,6 +78,7 @@ jobs:
             **/__pycache__/**
             .github/workflows/fetch_animal.py
             .github/workflows/fetch_news.py
+            .github/workflows/fetch_travel.py
             .github/workflows/fetch_weekly.py
             README.md
             assets/images/favicon.png
