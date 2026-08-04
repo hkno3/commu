@@ -686,22 +686,16 @@ def main():
     # 2. 발행 이력 로드
     published = load_published()
 
-    # latest.json에 있는 article_id도 published에 추가 (published.json 삭제돼도 중복 방지)
-    latest_path = os.path.join(DATA_DIR, "latest.json")
-    if os.path.exists(latest_path):
-        try:
-            latest = json.load(open(latest_path, encoding="utf-8"))
-            for a in latest:
-                published["ids"].add(a.get("article_id", ""))
-                # 원본 제목도 중복 이력에 추가
-                orig_title = a.get("original_title") or a.get("title", "")
-                if orig_title:
-                    published["titles"].append({
-                        "date": (a.get("pubDate") or a.get("pub_date") or "")[:10],
-                        "keywords": list(extract_keywords(orig_title)),
-                    })
-        except Exception:
-            pass
+    # 기존 카테고리 파일의 article_id도 published에 추가 (중복 방지)
+    for _cat in CATEGORIES:
+        for _a in load_category_articles(_cat):
+            published["ids"].add(_a.get("article_id", ""))
+            orig_title = _a.get("original_title") or _a.get("title", "")
+            if orig_title:
+                published["titles"].append({
+                    "date": (_a.get("pubDate") or _a.get("pub_date") or "")[:10],
+                    "keywords": list(extract_keywords(orig_title)),
+                })
     print(f"[*] 발행 이력: {len(published['ids'])}개")
 
     # 3. 네이버 기사 가져오기
@@ -823,36 +817,16 @@ def main():
     existing.insert(0, new_article)
     save_category_articles(final_category, existing)
 
-    # 6. latest.json 업데이트 (뉴스 5카테고리 + animal + 여행지 포함)
-    all_articles = []
-    for cat in CATEGORIES:
-        all_articles.extend(load_category_articles(cat))
-    # 천천히 늙자 (animal.json) 포함
-    animal_path = os.path.join(DATA_DIR, "animal.json")
-    if os.path.exists(animal_path):
-        try:
-            all_articles.extend(json.load(open(animal_path, encoding="utf-8")) or [])
-        except Exception:
-            pass
-    # 여행지 (travelguide.json) 포함
-    travel_path = os.path.join(DATA_DIR, "travelguide.json")
-    if os.path.exists(travel_path):
-        try:
-            all_articles.extend(json.load(open(travel_path, encoding="utf-8")) or [])
-        except Exception:
-            pass
-    all_articles.sort(key=lambda x: x.get("pubDate", ""), reverse=True)
-    with open(os.path.join(DATA_DIR, "latest.json"), "w", encoding="utf-8") as f:
-        json.dump(all_articles, f, ensure_ascii=False, indent=2)
-
-    # 7. 발행 이력 저장
+    # 6. 발행 이력 저장
     save_published(published)
 
-    # 8. sitemap.xml 갱신
-    update_sitemap(all_articles)
-
-    # 9. rss.xml 갱신
-    update_rss(all_articles)
+    # 7. sitemap.xml / rss.xml 갱신 (뉴스 카테고리만)
+    news_articles = []
+    for cat in CATEGORIES:
+        news_articles.extend(load_category_articles(cat))
+    news_articles.sort(key=lambda x: x.get("pubDate", ""), reverse=True)
+    update_sitemap(news_articles)
+    update_rss(news_articles)
 
     print(f"\n[완료] '{category}' → {new_article['title'][:50]}")
 

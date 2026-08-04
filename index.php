@@ -13,8 +13,11 @@ try {
     );
     $top_ids = $stmt->fetchAll(PDO::FETCH_ASSOC);
     if ($top_ids) {
-        $latest_path = DATA_DIR . '/latest.json';
-        $all = file_exists($latest_path) ? (json_decode(file_get_contents($latest_path), true) ?: []) : [];
+        $all = [];
+        foreach (['politics','economy','society','lifestyle','tech','animal','travelguide'] as $fname) {
+            $p = DATA_DIR . "/{$fname}.json";
+            if (file_exists($p)) $all = array_merge($all, json_decode(file_get_contents($p), true) ?: []);
+        }
         $id_map = array_column($all, null, 'article_id');
         foreach ($top_ids as $row) {
             $a = $id_map[$row['article_id']] ?? null;

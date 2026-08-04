@@ -31,7 +31,6 @@ SAVE_API_URL        = "https://newscommu.com/api/save_article.php"
 
 DATA_DIR    = "data"
 TRAVEL_FILE = os.path.join(DATA_DIR, "travelguide.json")
-LATEST_FILE = os.path.join(DATA_DIR, "latest.json")
 
 GEMINI_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
@@ -552,7 +551,6 @@ def main():
     print(f"[{now.strftime('%Y-%m-%d %H:%M')} KST] 여행지 가이드 생성 시작")
 
     travel_data = load_json(TRAVEL_FILE)
-    latest_data = load_json(LATEST_FILE)
 
     # 1. KTO에서 발행할 관광지 선택
     spot = pick_kto_content(travel_data)
@@ -659,10 +657,6 @@ def main():
     travel_data = [a for a in travel_data if a.get("article_id") != article_id]
     travel_data.insert(0, article)
     save_json(TRAVEL_FILE, travel_data)
-
-    latest_data = [a for a in latest_data if a.get("article_id") != article_id]
-    latest_data.insert(0, article)
-    save_json(LATEST_FILE, latest_data)
 
     try:
         r = requests.post(
