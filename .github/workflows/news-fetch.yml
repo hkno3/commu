@@ -49,7 +49,7 @@ jobs:
       - name: Deploy to FastComet via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ftp.bizachieve.com
+          server: 172.105.235.119
           username: newscommu@newscommu.com
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: /

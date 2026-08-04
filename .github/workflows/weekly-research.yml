@@ -27,7 +27,7 @@ jobs:
           python - <<'EOF'
           import ftplib, os
 
-          HOST = "ftp.bizachieve.com"
+          HOST = "172.105.235.119"
           USER = "newscommu@newscommu.com"
           PASS = "${{ secrets.FTP_PASSWORD }}"
 
@@ -67,7 +67,7 @@ jobs:
       - name: Deploy to FastComet via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ftp.bizachieve.com
+          server: 172.105.235.119
           username: newscommu@newscommu.com
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: /
