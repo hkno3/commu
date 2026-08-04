@@ -823,7 +823,7 @@ def main():
     existing.insert(0, new_article)
     save_category_articles(final_category, existing[:10000])
 
-    # 6. latest.json 업데이트 (뉴스 5카테고리 + animal 포함)
+    # 6. latest.json 업데이트 (뉴스 5카테고리 + animal + 여행지 포함)
     all_articles = []
     for cat in CATEGORIES:
         all_articles.extend(load_category_articles(cat))
@@ -832,6 +832,13 @@ def main():
     if os.path.exists(animal_path):
         try:
             all_articles.extend(json.load(open(animal_path, encoding="utf-8")) or [])
+        except Exception:
+            pass
+    # 여행지 (travelguide.json) 포함
+    travel_path = os.path.join(DATA_DIR, "travelguide.json")
+    if os.path.exists(travel_path):
+        try:
+            all_articles.extend(json.load(open(travel_path, encoding="utf-8")) or [])
         except Exception:
             pass
     all_articles.sort(key=lambda x: x.get("pubDate", ""), reverse=True)
