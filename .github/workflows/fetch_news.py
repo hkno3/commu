@@ -821,7 +821,7 @@ def main():
     # 5b. 카테고리 파일 업데이트 (Claude 분류 카테고리 기준, 최신순, 최대 50개)
     existing = load_category_articles(final_category)
     existing.insert(0, new_article)
-    save_category_articles(final_category, existing[:10000])
+    save_category_articles(final_category, existing)
 
     # 6. latest.json 업데이트 (뉴스 5카테고리 + animal + 여행지 포함)
     all_articles = []
@@ -843,7 +843,7 @@ def main():
             pass
     all_articles.sort(key=lambda x: x.get("pubDate", ""), reverse=True)
     with open(os.path.join(DATA_DIR, "latest.json"), "w", encoding="utf-8") as f:
-        json.dump(all_articles[:500], f, ensure_ascii=False, indent=2)
+        json.dump(all_articles, f, ensure_ascii=False, indent=2)
 
     # 7. 발행 이력 저장
     save_published(published)

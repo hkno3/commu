@@ -649,12 +649,10 @@ def main():
     # 기존 동일 article_id 교체
     travel_data = [a for a in travel_data if a.get("article_id") != article_id]
     travel_data.insert(0, article)
-    travel_data = travel_data[:300]
     save_json(TRAVEL_FILE, travel_data)
 
     latest_data = [a for a in latest_data if a.get("article_id") != article_id]
     latest_data.insert(0, article)
-    latest_data = latest_data[:500]
     save_json(LATEST_FILE, latest_data)
 
     try:
