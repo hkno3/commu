@@ -6,10 +6,14 @@ on:
 jobs:
   fetch-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -19,48 +23,6 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install requests
-
-      - name: Download data files from server
-        run: |
-          python - <<'EOF'
-          import ftplib, os, json
-
-          HOST = "ftp.bizachieve.com"
-          USER = "newscommu@newscommu.com"
-          PASS = "${{ secrets.FTP_PASSWORD }}"
-          FILES = ["data/published.json", "data/latest.json"]
-
-          os.makedirs("data", exist_ok=True)
-
-          try:
-              ftp = ftplib.FTP(HOST)
-              ftp.login(USER, PASS)
-              for f in FILES:
-                  try:
-                      with open(f, "wb") as fp:
-                          ftp.retrbinary(f"RETR {f}", fp.write)
-                      print(f"Downloaded: {f}")
-                  except Exception as e:
-                      print(f"Skip {f}: {e}")
-              # Download category json files
-              try:
-                  entries = ftp.nlst("data")
-                  for fpath in entries:
-                      fname = os.path.basename(fpath)
-                      if fname.endswith(".json") and fname not in ["published.json", "latest.json"]:
-                          local = f"data/{fname}"
-                          try:
-                              with open(local, "wb") as fp:
-                                  ftp.retrbinary(f"RETR data/{fname}", fp.write)
-                              print(f"Downloaded: {local}")
-                          except Exception as e:
-                              print(f"Skip {local}: {e}")
-              except Exception as e:
-                  print(f"data dir error: {e}")
-              ftp.quit()
-          except Exception as e:
-              print(f"FTP error: {e}")
-          EOF
 
       - name: Fetch and rewrite news
         env:
@@ -75,6 +37,14 @@ jobs:
           SAVE_SECRET: ${{ secrets.SAVE_SECRET }}
         run: |
           python .github/workflows/fetch_news.py
+
+      - name: Commit data files to GitHub
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "auto: update news data [skip ci]"
+          git push
 
       - name: Deploy to FastComet via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
