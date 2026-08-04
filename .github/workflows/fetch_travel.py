@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 여행지 소개 — AI 여행 가이드 생성기
-매주 3개의 여행지 가이드 기사를 생성한다.
-GEMINI_API_KEY_3 사용
+2시간마다 1개 여행지 가이드 기사를 생성한다.
+이미지: 한국관광공사 공식 API 우선, 없으면 Unsplash 폴백
 """
 
 import os
@@ -12,15 +12,17 @@ import time
 import requests
 import markdown
 from datetime import datetime, timezone, timedelta
+from urllib.parse import unquote
 
 KST = timezone(timedelta(hours=9))
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY_3", "")
+GEMINI_API_KEY     = os.environ.get("GEMINI_API_KEY_3", "")
+KTO_API_KEY        = os.environ.get("KTO_API_KEY", "")          # 한국관광공사 API
 UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
-SAVE_SECRET = os.environ.get("SAVE_SECRET", "nc_save_s3cr3t_2026")
-SAVE_API_URL = "https://newscommu.com/api/save_article.php"
+SAVE_SECRET        = os.environ.get("SAVE_SECRET", "nc_save_s3cr3t_2026")
+SAVE_API_URL       = "https://newscommu.com/api/save_article.php"
 
-DATA_DIR = "data"
+DATA_DIR    = "data"
 TRAVEL_FILE = os.path.join(DATA_DIR, "travelguide.json")
 LATEST_FILE = os.path.join(DATA_DIR, "latest.json")
 
@@ -28,64 +30,74 @@ GEMINI_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
     f"gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
 )
+KTO_BASE = "https://apis.data.go.kr/B551011/KorService2"
 
-# 주차별 여행지 테마 및 목적지 목록 (52주 × 3개)
-DESTINATION_THEMES = [
-    # (테마, [목적지1, 목적지2, 목적지3])
-    ("겨울 온천 여행", ["일본 벳푸 온천", "강원도 평창", "충청도 아산 온양온천"]),
-    ("동남아 해변 휴양", ["태국 푸켓", "베트남 다낭", "필리핀 세부"]),
-    ("국내 역사 탐방", ["경주", "전주 한옥마을", "공주·부여"]),
-    ("유럽 도시 여행", ["체코 프라하", "오스트리아 빈", "헝가리 부다페스트"]),
-    ("제주도 테마 여행", ["제주 동부 해안", "제주 서귀포 올레길", "제주 한라산 트레킹"]),
-    ("일본 주요 도시", ["오사카·교토", "도쿄 근교", "홋카이도 삿포로"]),
-    ("국내 바다 여행", ["부산 해운대·광안리", "여수 오동도·돌산도", "통영 한려수도"]),
-    ("중앙아시아·터키", ["터키 이스탄불", "터키 카파도키아", "조지아 트빌리시"]),
-    ("봄 벚꽃 여행지", ["진해 군항제", "경주 보문호", "일본 교토 마루야마 공원"]),
-    ("동유럽 감성 여행", ["폴란드 크라쿠프", "슬로바키아 브라티슬라바", "루마니아 부쿠레슈티"]),
-    ("국내 산악 트레킹", ["설악산 대청봉", "지리산 천왕봉", "덕유산 향적봉"]),
-    ("동남아 문화 탐방", ["베트남 하노이", "캄보디아 앙코르와트", "미얀마 바간"]),
-    ("스페인·포르투갈", ["스페인 바르셀로나", "스페인 세비야", "포르투갈 리스본"]),
-    ("국내 섬 여행", ["울릉도·독도", "거제도", "신안 1004섬"]),
-    ("중국 주요 명소", ["장가계", "구채구·황룡", "계림 이강"]),
-    ("북유럽 여행", ["아이슬란드 레이캬비크", "노르웨이 피오르", "핀란드 헬싱키"]),
-    ("국내 강·계곡 여행", ["강원도 인제 내린천", "경북 청송 주왕산", "충북 단양"]),
-    ("미국 주요 도시", ["뉴욕", "로스앤젤레스", "샌프란시스코"]),
-    ("여름 해외 피서지", ["몰디브", "발리 우붓", "그리스 산토리니"]),
-    ("국내 드라이브 코스", ["동해 해안도로", "남해 독일마을·미조항", "서해 태안 해안도로"]),
-    ("이탈리아 여행", ["로마", "피렌체·토스카나", "베네치아"]),
-    ("동북아 근거리 여행", ["대만 타이베이", "홍콩", "마카오"]),
-    ("국내 캠핑 명소", ["강원 홍천 미약골", "경기 가평 잣향기 푸른숲", "충남 태안 백사장항"]),
-    ("중남미 여행", ["페루 마추픽추", "아르헨티나 부에노스아이레스", "쿠바 아바나"]),
-    ("국내 겨울 눈꽃 여행", ["태백 태백산 눈축제", "강원 횡성 삼배봉", "지리산 노고단"]),
-    ("인도·네팔", ["인도 바라나시", "네팔 카트만두", "인도 라자스탄 조드푸르"]),
-    ("국내 봄 꽃 명소", ["경남 하동 십리벚꽃길", "전남 구례 산수유", "강원 평창 야생화"]),
-    ("아프리카 여행", ["남아공 케이프타운", "탄자니아 킬리만자로", "모로코 마라케시"]),
-    ("국내 가을 단풍", ["내장산", "설악산 천불동계곡", "강원 오대산"]),
-    ("중동 여행", ["아랍에미리트 두바이", "이스라엘 예루살렘", "요르단 페트라"]),
-    ("국내 미식 여행", ["전주 한식 투어", "부산 해산물 투어", "강릉 커피와 막국수"]),
-    ("캐나다·알래스카", ["캐나다 밴쿠버", "캐나다 밴프 국립공원", "알래스카 오로라 투어"]),
-    ("국내 문화·예술 도시", ["광주 국립아시아문화전당", "인천 아트플랫폼", "춘천 마임축제"]),
-    ("인도네시아 여행", ["발리 우붓 문화지구", "발리 꾸따·스미냑", "롬복·길리 아일랜드"]),
-    ("국내 한적한 농촌 마을", ["전남 순천 낙안읍성", "경북 안동 하회마을", "충남 외암 민속마을"]),
-    ("호주·뉴질랜드", ["호주 시드니", "호주 멜버른", "뉴질랜드 퀸즈타운"]),
-    ("국내 사찰 템플스테이", ["경남 합천 해인사", "전남 순천 선암사", "강원 오대산 월정사"]),
-    ("러시아·동유럽", ["러시아 모스크바", "러시아 상트페테르부르크", "체코 프라하 카를교"]),
-    ("국내 해양 스포츠", ["부산 송정해수욕장 서핑", "제주 서귀포 스쿠버다이빙", "강원 양양 서핑"]),
-    ("프랑스 여행", ["파리", "니스·코트다쥐르", "몽생미셸"]),
-    ("국내 온천·스파", ["충청도 덕산 스파캐슬", "강원 속초 워터피아", "전북 무주 덕유산 리조트"]),
-    ("중미·카리브해", ["멕시코 칸쿤", "코스타리카", "도미니카 공화국 푼타카나"]),
-    ("국내 겨울 스키장", ["강원 하이원 리조트", "강원 휘닉스 파크", "경기 비발디파크"]),
-    ("독일·스위스·오스트리아", ["독일 뮌헨·노이슈반슈타인성", "스위스 인터라켄", "오스트리아 잘츠부르크"]),
-    ("국내 워케이션 명소", ["강릉 안목해변 카페거리", "제주 애월", "전남 여수 낭만포차거리"]),
-    ("태국 전체 여행", ["방콕", "치앙마이", "태국 코사무이·코판냔"]),
-    ("국내 야경 명소", ["서울 남산타워", "부산 감천문화마을", "인천 소래포구"]),
-    ("그리스 섬 여행", ["산토리니", "미코노스", "크레타 섬"]),
-    ("국내 자연 생태 여행", ["순천만 갈대밭", "충남 서천 금강하구", "강원 철원 두루미 탐조"]),
-    ("영국 여행", ["런던", "스코틀랜드 에든버러", "잉글랜드 코츠월드"]),
-    ("국내 도보 여행", ["제주 올레길 1코스", "부산 갈맷길", "서울 둘레길"]),
-    ("베트남 전국 일주", ["하노이 하롱베이", "다낭·호이안", "호치민 메콩델타"]),
+# 전체 여행지 목록 (순환)
+ALL_DESTINATIONS = [
+    # 국내
+    "제주도 동부 해안", "제주 서귀포 올레길", "제주 한라산 트레킹",
+    "부산 해운대·광안리", "부산 감천문화마을·태종대",
+    "경주 불국사·석굴암", "경주 동궁과 월지·첨성대",
+    "전주 한옥마을", "전주 한식 투어",
+    "여수 오동도·돌산도", "여수 낭만포차거리",
+    "통영 한려수도·미륵도", "통영 케이블카·달아공원",
+    "강릉 경포대·안목해변", "강릉 커피거리·오죽헌",
+    "속초 설악산·청초호", "강원 인제 내린천·백담사",
+    "춘천 소양강댐·남이섬", "가평 청평호·잣향기 푸른숲",
+    "서울 경복궁·인사동", "서울 북촌한옥마을·창덕궁",
+    "서울 한강공원·노을공원", "서울 남산타워·이태원",
+    "인천 소래포구·월미도", "인천 강화도·전등사",
+    "공주·부여 백제역사유적", "안동 하회마을·도산서원",
+    "순천만 갈대밭·낙안읍성", "담양 죽녹원·메타세쿼이아길",
+    "거제도 해금강·바람의 언덕", "남해 독일마을·상주은모래비치",
+    "설악산 대청봉·비선대", "지리산 노고단·천왕봉",
+    "내장산 단풍", "덕유산 향적봉·무주 리조트",
+    "울릉도·독도", "신안 1004섬·압해도",
+    "태안 해안국립공원", "충남 서산 마애삼존불·해미읍성",
+    "경북 청송 주왕산", "경남 하동 십리벚꽃길",
+    "전남 구례 산수유마을", "진해 군항제 벚꽃",
+    # 해외
+    "일본 도쿄 아사쿠사·시부야", "일본 교토 기온·아라시야마",
+    "일본 오사카 도톤보리·유니버설스튜디오", "일본 홋카이도 삿포로",
+    "일본 후쿠오카·나가사키",
+    "태국 방콕 왓포·왓아룬", "태국 치앙마이 님만해민",
+    "태국 푸켓 빠통해변", "태국 코사무이",
+    "베트남 하노이 호안끼엠호수", "베트남 다낭·호이안",
+    "베트남 호치민 벤탄시장·메콩델타",
+    "필리핀 세부·보홀", "필리핀 팔라완 엘니도",
+    "인도네시아 발리 우붓·딴아롯사원", "인도네시아 롬복·길리",
+    "대만 타이베이 지우펀·야류", "대만 타이중·타이난",
+    "홍콩 야경·빅토리아피크", "마카오 세나도광장·베네시안",
+    "싱가포르 마리나베이샌즈·가든스바이더베이",
+    "말레이시아 쿠알라룸프르·페낭",
+    "터키 이스탄불 블루모스크·그랜드바자르", "터키 카파도키아 열기구",
+    "그리스 산토리니·아테네", "그리스 미코노스·크레타",
+    "이탈리아 로마 콜로세움·트레비분수", "이탈리아 피렌체·토스카나",
+    "이탈리아 베네치아·밀라노",
+    "프랑스 파리 에펠탑·루브르", "프랑스 니스·몽생미셸",
+    "스페인 바르셀로나 사그라다파밀리아", "스페인 세비야·그라나다",
+    "포르투갈 리스본·포르투",
+    "체코 프라하 카를교·구시가지", "오스트리아 빈 쇤브룬궁전",
+    "헝가리 부다페스트 어부의요새",
+    "스위스 인터라켄·융프라우", "독일 뮌헨·노이슈반슈타인성",
+    "노르웨이 피오르·베르겐", "아이슬란드 오로라·레이캬비크",
+    "영국 런던 빅벤·버킹엄궁전", "스코틀랜드 에든버러성",
+    "모로코 마라케시 제마엘프나광장", "이집트 카이로 피라미드",
+    "남아공 케이프타운 테이블마운틴",
+    "미국 뉴욕 타임스스퀘어·센트럴파크", "미국 로스앤젤레스 할리우드",
+    "미국 라스베이거스·그랜드캐니언", "미국 샌프란시스코 금문교",
+    "캐나다 밴쿠버·휘슬러", "캐나다 밴프 국립공원",
+    "멕시코 칸쿤·툴룸", "페루 마추픽추·쿠스코",
+    "아랍에미리트 두바이 버즈칼리파", "요르단 페트라",
+    "인도 타지마할·자이푸르", "네팔 카트만두·안나푸르나",
+    "호주 시드니 오페라하우스·본다이비치", "호주 멜버른·그레이트오션로드",
+    "뉴질랜드 퀸즈타운·밀퍼드사운드",
 ]
 
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def load_json(path):
     if os.path.exists(path):
@@ -102,9 +114,112 @@ def save_json(path, data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def get_unsplash_image(keyword: str) -> str:
+def pick_destination(travel_data: list) -> str:
+    """실행 시각 기반으로 아직 안 쓴 여행지를 선택"""
+    now = datetime.now(KST)
+    # 이미 발행된 여행지 제목에서 destination 추출
+    done = {a.get("destination", "") for a in travel_data}
+
+    # 시간 기반 오프셋으로 순서 섞기
+    hour_offset = (now.day * 24 + now.hour) % len(ALL_DESTINATIONS)
+    rotated = ALL_DESTINATIONS[hour_offset:] + ALL_DESTINATIONS[:hour_offset]
+
+    for dest in rotated:
+        if dest not in done:
+            return dest
+
+    # 전부 다 했으면 처음부터 다시
+    return rotated[0]
+
+
+# ---------------------------------------------------------------------------
+# 한국관광공사 API (국내 관광지 공식 이미지)
+# ---------------------------------------------------------------------------
+
+def get_kto_image(keyword: str) -> dict:
+    """한국관광공사 API로 관광지 공식 이미지 조회"""
+    empty = {"url": "", "credit": ""}
+    if not KTO_API_KEY:
+        return empty
+
+    # URL 인코딩된 키는 requests가 자동 처리하므로 디코딩해서 사용
+    key = unquote(KTO_API_KEY)
+
+    try:
+        # 키워드로 관광지 검색
+        r = requests.get(
+            f"{KTO_BASE}/searchKeyword2",
+            params={
+                "serviceKey": key,
+                "numOfRows": 5,
+                "pageNo": 1,
+                "MobileOS": "ETC",
+                "MobileApp": "newscommu",
+                "_type": "json",
+                "keyword": keyword,
+                "contentTypeId": 12,  # 관광지
+            },
+            timeout=10,
+        )
+        body = r.json().get("response", {}).get("body", {})
+        items = body.get("items", {})
+        if not items:
+            return empty
+        item_list = items.get("item", [])
+        if isinstance(item_list, dict):
+            item_list = [item_list]
+        if not item_list:
+            return empty
+
+        # 첫 번째 결과의 대표 이미지
+        first = item_list[0]
+        img_url = first.get("firstimage", "") or first.get("firstimage2", "")
+        if img_url:
+            return {
+                "url": img_url,
+                "credit": "한국관광공사",
+            }
+
+        # 대표 이미지 없으면 서브 이미지 조회
+        content_id = first.get("contentid", "")
+        if content_id:
+            r2 = requests.get(
+                f"{KTO_BASE}/detailImage2",
+                params={
+                    "serviceKey": key,
+                    "numOfRows": 3,
+                    "pageNo": 1,
+                    "MobileOS": "ETC",
+                    "MobileApp": "newscommu",
+                    "_type": "json",
+                    "contentId": content_id,
+                    "imageYN": "Y",
+                    "subImageYN": "Y",
+                },
+                timeout=10,
+            )
+            body2 = r2.json().get("response", {}).get("body", {})
+            items2 = body2.get("items", {})
+            if items2:
+                imgs = items2.get("item", [])
+                if isinstance(imgs, dict):
+                    imgs = [imgs]
+                if imgs and imgs[0].get("originimgurl"):
+                    return {
+                        "url": imgs[0]["originimgurl"],
+                        "credit": "한국관광공사",
+                    }
+    except Exception as e:
+        print(f"  KTO API 오류: {e}")
+
+    return empty
+
+
+def get_unsplash_image(keyword: str) -> dict:
+    """Unsplash 이미지 (KTO 폴백)"""
+    empty = {"url": "", "credit": ""}
     if not UNSPLASH_ACCESS_KEY:
-        return ""
+        return empty
     for kw in [keyword, "travel landscape scenic"]:
         try:
             r = requests.get(
@@ -117,11 +232,52 @@ def get_unsplash_image(keyword: str) -> str:
             for item in results:
                 url = item.get("urls", {}).get("regular", "")
                 if url and "plus.unsplash.com" not in url:
-                    return url
+                    user = item.get("user", {})
+                    return {
+                        "url": url,
+                        "photographer_name": user.get("name", ""),
+                        "photographer_url": user.get("links", {}).get("html", ""),
+                        "photo_url": item.get("links", {}).get("html", ""),
+                        "credit": "unsplash",
+                    }
         except Exception:
             pass
-    return ""
+    return empty
 
+
+def get_best_image(destination: str) -> dict:
+    """KTO 우선, 없으면 Unsplash"""
+    # 국내 여행지는 KTO 먼저
+    is_domestic = not any(w in destination for w in [
+        "일본", "태국", "베트남", "필리핀", "인도네시아", "대만", "홍콩", "마카오",
+        "싱가포르", "말레이시아", "터키", "그리스", "이탈리아", "프랑스", "스페인",
+        "포르투갈", "체코", "오스트리아", "헝가리", "스위스", "독일", "노르웨이",
+        "아이슬란드", "영국", "스코틀랜드", "모로코", "이집트", "남아공",
+        "미국", "캐나다", "멕시코", "페루", "아랍", "요르단", "인도", "네팔",
+        "호주", "뉴질랜드",
+    ])
+
+    # 검색 키워드 추출 (지역명)
+    search_kw = destination.split("·")[0].split(" ")[0]
+
+    if is_domestic and KTO_API_KEY:
+        img = get_kto_image(search_kw)
+        if img["url"]:
+            print(f"  이미지: KTO 공식 ({search_kw})")
+            return img
+
+    img = get_unsplash_image(search_kw)
+    if img["url"]:
+        print(f"  이미지: Unsplash ({img.get('photographer_name', '')})")
+        return img
+
+    print("  이미지: 없음")
+    return {"url": "", "credit": ""}
+
+
+# ---------------------------------------------------------------------------
+# Gemini: 여행지 가이드 생성
+# ---------------------------------------------------------------------------
 
 TRAVEL_PROMPT = """당신은 한국어 여행 전문 작가입니다. '{destination}'에 대한 완성도 높은 여행 가이드를 작성하세요.
 
@@ -145,7 +301,6 @@ TRAVEL_PROMPT = """당신은 한국어 여행 전문 작가입니다. '{destinat
 (월별 날씨와 추천 시기, 성수기·비수기 정보)
 
 ### 🏛️ 꼭 가봐야 할 명소 TOP 5
-(각 명소마다 간략한 설명 포함)
 1. **명소명**: 설명
 2. **명소명**: 설명
 3. **명소명**: 설명
@@ -153,42 +308,34 @@ TRAVEL_PROMPT = """당신은 한국어 여행 전문 작가입니다. '{destinat
 5. **명소명**: 설명
 
 ### 🍜 현지 음식 & 맛집
-(꼭 먹어봐야 할 음식 3~5가지와 추천 식당 또는 먹는 방법)
+(꼭 먹어봐야 할 음식 3~5가지와 추천 먹는 방법)
 
 ### 💰 예산 가이드
-(항공, 숙박, 식비, 관광 예산을 표로 정리)
 
 | 항목 | 예산 (1인 기준) |
 |------|----------------|
-| 항공권 | |
+| 항공권/교통 | |
 | 숙박 (1박) | |
 | 식비 (1일) | |
 | 관광·입장료 | |
 | 총 예상 비용 (3박 4일) | |
 
 ### 🚌 교통 & 이동
-(현지에서 이동하는 방법, 공항에서 시내까지 방법)
+(현지에서 이동하는 방법, 출발지에서 도착까지)
 
 ### 💡 알아두면 좋은 팁
 
 <details>
-<summary>현지 언어 기본 표현</summary>
-간단한 현지어 인사말과 유용한 표현 3~5개
-</details>
-
-<details>
-<summary>여행 전 준비사항 체크리스트</summary>
-비자, 환전, 필수 앱, 짐싸기 팁
+<summary>현지 유용한 정보</summary>
+언어, 환전, 유심, 필수 앱, 짐싸기 팁
 </details>
 
 <details>
 <summary>주의사항 & 안전 팁</summary>
-현지에서 주의해야 할 점, 바가지 예방, 안전 수칙
+현지에서 주의해야 할 점, 안전 수칙
 </details>
 
 ### ⭐ 추천 일정 (3박 4일 기준)
-(간략한 날짜별 일정)
-
 **1일차**: ...
 **2일차**: ...
 **3일차**: ...
@@ -200,15 +347,11 @@ TRAVEL_PROMPT = """당신은 한국어 여행 전문 작가입니다. '{destinat
 
 def generate_travel_article(destination: str) -> dict | None:
     now = datetime.now(KST)
-    today = now.strftime("%Y년 %m월 %d일")
-    year = now.year
-
     prompt = TRAVEL_PROMPT.format(
         destination=destination,
-        today=today,
-        year=year,
+        today=now.strftime("%Y년 %m월 %d일"),
+        year=now.year,
     )
-
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
@@ -217,7 +360,6 @@ def generate_travel_article(destination: str) -> dict | None:
             "thinkingConfig": {"thinkingBudget": 2000},
         },
     }
-
     for attempt in range(1, 4):
         try:
             r = requests.post(GEMINI_URL, json=payload, timeout=180)
@@ -231,45 +373,38 @@ def generate_travel_article(destination: str) -> dict | None:
                 return None
 
     try:
-        data = r.json()
-        parts = data["candidates"][0]["content"]["parts"]
-        content = "".join(
-            p["text"] for p in parts if not p.get("thought", False)
-        ).strip()
-
+        parts = r.json()["candidates"][0]["content"]["parts"]
+        content = "".join(p["text"] for p in parts if not p.get("thought", False)).strip()
         if not content:
-            print("  Gemini 응답 비어 있음")
             return None
 
-        # Extract first H2 as title
         title = f"{destination} 완벽 여행 가이드"
         for line in content.splitlines():
-            line = line.strip()
-            if line.startswith("## "):
-                title = line.lstrip("#").strip()
+            if line.strip().startswith("## "):
+                title = line.strip().lstrip("#").strip()
                 break
 
-        # Extract summary from introduction paragraph
-        summary = f"{destination}의 매력을 소개하는 완벽 여행 가이드입니다. 최적 시기, 명소, 맛집, 예산까지 한 번에 확인하세요."
+        summary = f"{destination}의 매력을 소개하는 완벽 여행 가이드입니다."
         lines = content.splitlines()
         for i, line in enumerate(lines):
-            if "여행지 소개" in line and i + 1 < len(lines):
-                for j in range(i + 1, min(i + 5, len(lines))):
-                    if lines[j].strip() and not lines[j].startswith("#"):
-                        summary = lines[j].strip()[:150]
+            if "여행지 소개" in line:
+                for j in range(i + 1, min(i + 6, len(lines))):
+                    t = lines[j].strip()
+                    if t and not t.startswith("#"):
+                        summary = t[:150]
                         break
                 break
 
-        content_html = markdown.markdown(
-            content,
-            extensions=["nl2br", "tables"]
-        )
+        content_html = markdown.markdown(content, extensions=["nl2br", "tables"])
         return {"title": title, "summary": summary, "content": content_html}
-
     except Exception as e:
-        print(f"  응답 파싱 오류: {e}")
+        print(f"  파싱 오류: {e}")
         return None
 
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
 def main():
     if not GEMINI_API_KEY:
@@ -279,82 +414,68 @@ def main():
     now = datetime.now(KST)
     print(f"[{now.strftime('%Y-%m-%d %H:%M')} KST] 여행지 가이드 생성 시작")
 
-    # 주차 기반으로 테마 선택
-    week_num = now.isocalendar()[1]
-    theme_idx = week_num % len(DESTINATION_THEMES)
-    theme_name, destinations = DESTINATION_THEMES[theme_idx]
-    print(f"이번 주 테마: {theme_name} | 목적지: {', '.join(destinations)}")
-
     travel_data = load_json(TRAVEL_FILE)
     latest_data = load_json(LATEST_FILE)
 
-    for destination in destinations:
-        print(f"\n[생성 중] {destination}")
+    destination = pick_destination(travel_data)
+    print(f"선택된 여행지: {destination}")
 
-        result = generate_travel_article(destination)
-        if not result:
-            print(f"  건너뜀: {destination}")
-            continue
+    result = generate_travel_article(destination)
+    if not result:
+        print("생성 실패")
+        return
 
-        # Unsplash 이미지
-        image_url = get_unsplash_image(destination.split(" ")[-1])
-        if not image_url:
-            image_url = get_unsplash_image("travel destination scenery")
-        print(f"  이미지: {'있음' if image_url else '없음'}")
+    img = get_best_image(destination)
 
-        article_id = "travel_" + hashlib.md5(
-            (destination + now.strftime("%Y-%W")).encode()
-        ).hexdigest()[:12]
+    article_id = "travel_" + hashlib.md5(
+        (destination + now.strftime("%Y-%m-%d-%H")).encode()
+    ).hexdigest()[:12]
+    pub_date = now.strftime("%Y-%m-%dT%H:%M:%S+09:00")
 
-        pub_date = now.strftime("%Y-%m-%dT%H:%M:%S+09:00")
+    # 이미지 출처 필드 구성
+    is_kto = img.get("credit") == "한국관광공사"
+    article = {
+        "article_id":          article_id,
+        "title":               result["title"],
+        "summary":             result["summary"],
+        "content":             result["content"],
+        "image_url":           img.get("url", ""),
+        "image_credit_name":   "한국관광공사" if is_kto else img.get("photographer_name", ""),
+        "image_credit_url":    "https://www.visitkorea.or.kr" if is_kto else img.get("photographer_url", ""),
+        "image_photo_url":     "" if is_kto else img.get("photo_url", ""),
+        "image_source":        "kto" if is_kto else "unsplash",
+        "category":            "여행지",
+        "category_label":      "여행지",
+        "article_type":        "travel_guide",
+        "pub_date":            pub_date,
+        "pubDate":             pub_date,
+        "original_url":        "",
+        "source":              "AI 여행 가이드",
+        "destination":         destination,
+    }
 
-        article = {
-            "article_id":   article_id,
-            "title":        result["title"],
-            "summary":      result["summary"],
-            "content":      result["content"],
-            "image_url":    image_url,
-            "category":     "여행지",
-            "category_label": "여행지",
-            "article_type": "travel_guide",
-            "pub_date":     pub_date,
-            "pubDate":      pub_date,
-            "original_url": "",
-            "source":       "AI 여행 가이드",
-            "destination":  destination,
-        }
+    travel_data = [a for a in travel_data if a.get("article_id") != article_id]
+    travel_data.insert(0, article)
+    travel_data = travel_data[:300]
+    save_json(TRAVEL_FILE, travel_data)
 
-        # Save to travelguide.json
-        travel_data = [a for a in travel_data if a.get("article_id") != article_id]
-        travel_data.insert(0, article)
-        travel_data = travel_data[:200]
-        save_json(TRAVEL_FILE, travel_data)
+    latest_data = [a for a in latest_data if a.get("article_id") != article_id]
+    latest_data.insert(0, article)
+    latest_data = latest_data[:500]
+    save_json(LATEST_FILE, latest_data)
 
-        # Append to latest.json
-        latest_data = [a for a in latest_data if a.get("article_id") != article_id]
-        latest_data.insert(0, article)
-        latest_data = latest_data[:500]
-        save_json(LATEST_FILE, latest_data)
+    try:
+        r = requests.post(
+            SAVE_API_URL,
+            json=article,
+            headers={"X-Save-Secret": SAVE_SECRET, "Content-Type": "application/json"},
+            timeout=15,
+        )
+        print(f"  DB: {'완료' if r.status_code == 200 else '실패 ' + str(r.status_code)}")
+    except Exception as e:
+        print(f"  DB 오류 (무시): {e}")
 
-        # DB 저장
-        try:
-            r = requests.post(
-                SAVE_API_URL,
-                json=article,
-                headers={"X-Save-Secret": SAVE_SECRET, "Content-Type": "application/json"},
-                timeout=15,
-            )
-            if r.status_code == 200:
-                print(f"  [DB] 저장 완료")
-            else:
-                print(f"  [DB] 저장 실패: {r.status_code}")
-        except Exception as e:
-            print(f"  [DB] 오류 (무시): {e}")
-
-        print(f"  완료: {result['title'][:50]}")
-        time.sleep(5)  # API 호출 간격
-
-    print("\n모든 여행지 가이드 생성 완료!")
+    print(f"완료: {result['title'][:60]}")
 
 
 if __name__ == "__main__":

@@ -30,9 +30,12 @@ let commentHasMore = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   buildCategoryNav();
-  // On article.php, ARTICLE_ID is defined; don't auto-load articles list
   if (typeof ARTICLE_ID === 'undefined') {
-    loadArticles(true);
+    if (typeof IS_HOME !== 'undefined' && IS_HOME) {
+      renderCategorySections();
+    } else {
+      loadArticles(true);
+    }
   }
 });
 
@@ -47,7 +50,14 @@ function buildCategoryNav() {
     btn.textContent = cat;
     btn.dataset.catKey = key;
     btn.onclick = () => {
-      if (document.getElementById('article-list')) {
+      if (typeof IS_HOME !== 'undefined' && IS_HOME) {
+        if (key === 'all') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          const sec = document.getElementById(`section-${key}`);
+          if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } else if (document.getElementById('article-list')) {
         switchCategory(key, btn);
       } else {
         const slug = CAT_SLUG[key];
@@ -382,6 +392,81 @@ function formatDate(str) {
   if (diff < 3600) return Math.floor(diff/60) + '분 전';
   if (diff < 86400) return Math.floor(diff/3600) + '시간 전';
   return `${d.getMonth()+1}월 ${d.getDate()}일`;
+}
+
+async function renderCategorySections() {
+  const container = document.getElementById('cat-sections');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const cats = CATEGORIES.filter(c => c !== '전체');
+  cats.forEach(cat => {
+    const key = CAT_MAP[cat];
+    const slug = CAT_SLUG[key];
+    const catUrl = slug ? `/${slug}` : `/?cat=${encodeURIComponent(key)}`;
+    const color = CAT_COLORS[key] || '#c8415d';
+
+    const section = document.createElement('section');
+    section.className = 'cat-section';
+    section.id = `section-${key}`;
+    section.innerHTML = `
+      <div class="cat-section-header">
+        <h2 class="cat-section-title" style="color:${color}">${escHtml(cat)}</h2>
+        <a class="cat-section-more" href="${catUrl}">더 보기 →</a>
+      </div>
+      <div class="h-scroll-row" id="hrow-${key}">
+        <div class="loading">불러오는 중...</div>
+      </div>
+    `;
+    container.appendChild(section);
+    fetchCategoryCards(key, `hrow-${key}`);
+  });
+}
+
+async function fetchCategoryCards(catKey, rowId) {
+  const row = document.getElementById(rowId);
+  if (!row) return;
+  try {
+    const params = new URLSearchParams({ page: 1, limit: 10, category: catKey });
+    const res = await fetch(`/api/articles.php?${params}`);
+    const data = await res.json();
+    row.innerHTML = '';
+    if (!data.articles || data.articles.length === 0) {
+      row.innerHTML = '<div class="empty-state" style="padding:30px 20px">기사가 없습니다.</div>';
+      return;
+    }
+    data.articles.forEach(article => row.appendChild(createHCard(article)));
+  } catch (e) {
+    if (row) row.innerHTML = '<div class="empty-state">데이터를 불러올 수 없습니다.</div>';
+  }
+}
+
+function createHCard(article) {
+  const slug = article.slug;
+  const isHexId = slug && /^[0-9a-f]{8,}$/.test(slug);
+  const href = (slug && !isHexId)
+    ? `/article.php?slug=${encodeURIComponent(slug)}`
+    : `/article.php?id=${encodeURIComponent(article.article_id)}`;
+
+  const card = document.createElement('a');
+  card.href = href;
+  card.className = 'h-card';
+
+  const catKey = article.category ? article.category.replace(/\//g, '_') : '';
+  const color = CAT_COLORS[catKey] || '#c8415d';
+
+  const imgHtml = article.image_url
+    ? `<div class="h-card-img"><img src="${escHtml(article.image_url)}" alt="${escHtml(article.title)}" loading="lazy" onerror="this.parentElement.style.background='${color}20'"></div>`
+    : `<div class="h-card-img h-card-img--placeholder" style="background:${color}20;"></div>`;
+
+  card.innerHTML = `
+    ${imgHtml}
+    <div class="h-card-body">
+      <div class="h-card-date">${formatDate(article.pub_date || article.pubDate)}</div>
+      <h3>${escHtml(article.title)}</h3>
+    </div>
+  `;
+  return card;
 }
 
 window.submitComment = submitComment;

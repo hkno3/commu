@@ -60,6 +60,7 @@ jobs:
         env:
           GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          KTO_API_KEY: ${{ secrets.KTO_API_KEY }}
         run: |
           python .github/workflows/fetch_travel.py
 

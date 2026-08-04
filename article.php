@@ -332,6 +332,22 @@ try {
                alt="<?= $title ?>"
                onerror="this.parentElement.style.display='none'"
                class="article-thumb-img">
+          <?php if (!empty($article['image_credit_name'])): ?>
+          <?php $is_kto = ($article['image_source'] ?? '') === 'kto'; ?>
+          <p class="image-credit">
+            <?php if ($is_kto): ?>
+              📷 사진 출처: <a href="https://www.visitkorea.or.kr" target="_blank" rel="noopener">한국관광공사</a>
+            <?php else: ?>
+              📷 Photo by
+              <?php if (!empty($article['image_credit_url'])): ?>
+                <a href="<?= htmlspecialchars($article['image_credit_url'], ENT_QUOTES) ?>?utm_source=newscommu&utm_medium=referral" target="_blank" rel="noopener"><?= htmlspecialchars($article['image_credit_name']) ?></a>
+              <?php else: ?>
+                <?= htmlspecialchars($article['image_credit_name']) ?>
+              <?php endif; ?>
+              on <a href="https://unsplash.com/?utm_source=newscommu&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>
+            <?php endif; ?>
+          </p>
+          <?php endif; ?>
         </div>
         <?php endif; ?>
 
