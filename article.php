@@ -332,6 +332,17 @@ try {
                alt="<?= $title ?>"
                onerror="this.parentElement.style.display='none'"
                class="article-thumb-img">
+          <?php if (!empty($article['image_credit_name'])): ?>
+          <p class="image-credit">
+            📷 Photo by
+            <?php if (!empty($article['image_credit_url'])): ?>
+              <a href="<?= htmlspecialchars($article['image_credit_url'], ENT_QUOTES) ?>?utm_source=newscommu&utm_medium=referral" target="_blank" rel="noopener"><?= htmlspecialchars($article['image_credit_name']) ?></a>
+            <?php else: ?>
+              <?= htmlspecialchars($article['image_credit_name']) ?>
+            <?php endif; ?>
+            on <a href="https://unsplash.com/?utm_source=newscommu&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>
+          </p>
+          <?php endif; ?>
         </div>
         <?php endif; ?>
 

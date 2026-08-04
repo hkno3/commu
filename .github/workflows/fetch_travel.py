@@ -102,9 +102,11 @@ def save_json(path, data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def get_unsplash_image(keyword: str) -> str:
+def get_unsplash_image(keyword: str) -> dict:
+    """Returns dict: url, photographer_name, photographer_url, photo_url"""
+    empty = {"url": "", "photographer_name": "", "photographer_url": "", "photo_url": ""}
     if not UNSPLASH_ACCESS_KEY:
-        return ""
+        return empty
     for kw in [keyword, "travel landscape scenic"]:
         try:
             r = requests.get(
@@ -117,10 +119,16 @@ def get_unsplash_image(keyword: str) -> str:
             for item in results:
                 url = item.get("urls", {}).get("regular", "")
                 if url and "plus.unsplash.com" not in url:
-                    return url
+                    user = item.get("user", {})
+                    return {
+                        "url": url,
+                        "photographer_name": user.get("name", ""),
+                        "photographer_url": user.get("links", {}).get("html", ""),
+                        "photo_url": item.get("links", {}).get("html", ""),
+                    }
         except Exception:
             pass
-    return ""
+    return empty
 
 
 TRAVEL_PROMPT = """당신은 한국어 여행 전문 작가입니다. '{destination}'에 대한 완성도 높은 여행 가이드를 작성하세요.
@@ -296,11 +304,11 @@ def main():
             print(f"  건너뜀: {destination}")
             continue
 
-        # Unsplash 이미지
-        image_url = get_unsplash_image(destination.split(" ")[-1])
-        if not image_url:
-            image_url = get_unsplash_image("travel destination scenery")
-        print(f"  이미지: {'있음' if image_url else '없음'}")
+        # Unsplash 이미지 (출처 정보 포함)
+        img = get_unsplash_image(destination.split(" ")[-1])
+        if not img["url"]:
+            img = get_unsplash_image("travel destination scenery")
+        print(f"  이미지: {'있음 (' + img['photographer_name'] + ')' if img['url'] else '없음'}")
 
         article_id = "travel_" + hashlib.md5(
             (destination + now.strftime("%Y-%W")).encode()
@@ -309,19 +317,22 @@ def main():
         pub_date = now.strftime("%Y-%m-%dT%H:%M:%S+09:00")
 
         article = {
-            "article_id":   article_id,
-            "title":        result["title"],
-            "summary":      result["summary"],
-            "content":      result["content"],
-            "image_url":    image_url,
-            "category":     "여행지",
-            "category_label": "여행지",
-            "article_type": "travel_guide",
-            "pub_date":     pub_date,
-            "pubDate":      pub_date,
-            "original_url": "",
-            "source":       "AI 여행 가이드",
-            "destination":  destination,
+            "article_id":          article_id,
+            "title":               result["title"],
+            "summary":             result["summary"],
+            "content":             result["content"],
+            "image_url":           img["url"],
+            "image_credit_name":   img["photographer_name"],
+            "image_credit_url":    img["photographer_url"],
+            "image_photo_url":     img["photo_url"],
+            "category":            "여행지",
+            "category_label":      "여행지",
+            "article_type":        "travel_guide",
+            "pub_date":            pub_date,
+            "pubDate":             pub_date,
+            "original_url":        "",
+            "source":              "AI 여행 가이드",
+            "destination":         destination,
         }
 
         # Save to travelguide.json

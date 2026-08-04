@@ -286,18 +286,27 @@ header {
   justify-content: center;
 }
 
+.article-thumb { margin-bottom: 24px; }
 .article-thumb-img {
   width: 100%;
   border-radius: 0;
-  margin-bottom: 24px;
   max-height: 420px;
   object-fit: cover;
   display: block;
 }
+.image-credit {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  text-align: right;
+}
+.image-credit a {
+  color: var(--text-muted);
+  text-decoration: underline;
+}
+.image-credit a:hover { color: var(--primary); }
 @media (max-width: 768px) {
-  .article-thumb-img {
-    max-height: 220px;
-  }
+  .article-thumb-img { max-height: 220px; }
 }
 .article-card:hover .article-card-img img {
   transform: scale(1.05);
