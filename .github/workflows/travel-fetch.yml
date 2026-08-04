@@ -1,0 +1,86 @@
+name: Fetch Travel Guide and Deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          pip install requests markdown
+
+      - name: Download data files from server
+        run: |
+          python - <<'EOF'
+          import ftplib, os
+
+          HOST = "ftp.bizachieve.com"
+          USER = "newscommu@newscommu.com"
+          PASS = "${{ secrets.FTP_PASSWORD }}"
+
+          os.makedirs("data", exist_ok=True)
+
+          try:
+              ftp = ftplib.FTP(HOST)
+              ftp.login(USER, PASS)
+              try:
+                  ftp.cwd("data")
+                  files = ftp.nlst()
+                  ftp.cwd("..")
+                  for fname in files:
+                      if fname.endswith(".json"):
+                          local = f"data/{fname}"
+                          try:
+                              with open(local, "wb") as fp:
+                                  ftp.retrbinary(f"RETR data/{fname}", fp.write)
+                              print(f"Downloaded: {local}")
+                          except Exception as e:
+                              print(f"Skip {local}: {e}")
+              except Exception as e:
+                  print(f"data dir error: {e}")
+              ftp.quit()
+          except Exception as e:
+              print(f"FTP error: {e}")
+          EOF
+
+      - name: Generate travel guide article
+        env:
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          KTO_API_KEY: ${{ secrets.KTO_API_KEY }}
+          SAVE_SECRET: ${{ secrets.SAVE_SECRET }}
+        run: |
+          python .github/workflows/fetch_travel.py
+
+      - name: Deploy to FastComet via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ftp.bizachieve.com
+          username: newscommu@newscommu.com
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: /
+          local-dir: ./
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/__pycache__/**
+            .github/workflows/fetch_news.py
+            .github/workflows/fetch_animal.py
+            .github/workflows/fetch_travel.py
+            .github/workflows/fetch_weekly.py
+            .github/workflows/link_utils.py
+            README.md
+            assets/images/favicon.png
+            rss.xml
+            sitemap.xml
