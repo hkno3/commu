@@ -13,8 +13,12 @@ import hashlib
 import time
 import requests
 import markdown
+import sys
 from datetime import datetime, timezone, timedelta
 from urllib.parse import unquote
+
+sys.path.insert(0, os.path.dirname(__file__))
+from link_utils import load_links_cache, insert_related_buttons
 
 KST = timezone(timedelta(hours=9))
 
@@ -582,6 +586,8 @@ def main():
         print("GEMINI_API_KEY_3 없음")
         return
 
+    links_cache = load_links_cache()
+
     now = datetime.now(KST)
     print(f"[{now.strftime('%Y-%m-%d %H:%M')} KST] 여행지 가이드 생성 시작")
 
@@ -616,7 +622,10 @@ def main():
         "slug":                slug,
         "title":               result["title"],
         "summary":             result["summary"],
-        "content":             result["content"],
+        "content":             insert_related_buttons(
+                                   result["content"], links_cache,
+                                   result["title"], result.get("summary", "")
+                               ),
         "image_url":           img.get("url", ""),
         "image_credit":        img.get("credit_text", "") if is_wikimedia else "",
         "image_credit_name":   "한국관광공사" if is_kto else "",

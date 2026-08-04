@@ -10,6 +10,10 @@ import re
 import random
 import hashlib
 import requests
+import sys
+
+sys.path.insert(0, os.path.dirname(__file__))
+from link_utils import load_links_cache, insert_related_buttons
 
 from datetime import datetime, timezone, timedelta
 
@@ -419,6 +423,7 @@ def search_animal_image(keyword: str) -> str | None:
 
 def main():
     os.makedirs(DATA_DIR, exist_ok=True)
+    links_cache = load_links_cache()
 
     if not GEMINI_API_KEY:
         print("[ERROR] GEMINI_API_KEY_2 미설정")
@@ -470,7 +475,10 @@ def main():
             "slug": rewritten.get("slug") or article_id,
             "original_title": paper["title"],
             "summary": rewritten["summary"],
-            "content": rewritten.get("content", ""),
+            "content": insert_related_buttons(
+                rewritten.get("content", ""), links_cache,
+                rewritten["title"], rewritten.get("summary", "")
+            ),
             "image_url": image_url,
             "original_url": paper["url"],
             "url": paper["url"],
