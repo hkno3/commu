@@ -39,12 +39,13 @@ try {
 
     $stmt = $pdo->prepare("
         INSERT INTO article_cache
-            (article_id, title, summary, content, image_url, original_url,
-             source, category, category_label, article_type, pub_date)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?)
+            (article_id, title, summary, content, image_url, image_credit, image_source,
+             original_url, source, category, category_label, article_type, pub_date)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON DUPLICATE KEY UPDATE
             title=VALUES(title), summary=VALUES(summary),
             content=VALUES(content), image_url=VALUES(image_url),
+            image_credit=VALUES(image_credit), image_source=VALUES(image_source),
             category=VALUES(category), category_label=VALUES(category_label),
             pub_date=VALUES(pub_date)
     ");
@@ -55,6 +56,8 @@ try {
         $article['summary'] ?? '',
         $article['content'] ?? '',
         mb_substr($article['image_url'] ?? '', 0, 2048),
+        mb_substr($article['image_credit'] ?? '', 0, 500),
+        $article['image_source'] ?? null,
         mb_substr($article['original_url'] ?? $article['url'] ?? '', 0, 2048),
         $article['source'] ?? '',
         $article['category'] ?? '',

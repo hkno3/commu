@@ -60,6 +60,8 @@ jobs:
           GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
           PUBMED_API_KEY: ${{ secrets.PUBMED_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           SAVE_SECRET: ${{ secrets.SAVE_SECRET }}
         run: |
           python .github/workflows/fetch_animal.py

@@ -426,31 +426,74 @@ def _parse_rewrite_result(result: str, original_title: str) -> dict:
     return {"title": new_title, "slug": new_slug, "summary": summary_text, "content": content_html, "category": new_category, "image_keyword": new_image_keyword}
 
 
-def search_naver_image(keyword: str) -> str | None:
-    """네이버 이미지 검색 API로 한국 맥락에 맞는 이미지 URL 반환"""
-    if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
-        return None
+def search_wikimedia_image(keyword: str) -> tuple:
+    """Wikimedia Commons에서 CC0/CC BY/CC BY-SA 이미지 검색 (NC/ND 제외)
+    Returns: (image_url, image_credit) — credit은 CC0이면 None
+    """
     if not keyword:
-        return None
+        return None, None
     try:
         resp = requests.get(
-            "https://openapi.naver.com/v1/search/image",
-            headers={
-                "X-Naver-Client-Id": NAVER_CLIENT_ID,
-                "X-Naver-Client-Secret": NAVER_CLIENT_SECRET,
+            "https://commons.wikimedia.org/w/api.php",
+            params={
+                "action": "query",
+                "generator": "search",
+                "gsrnamespace": 6,
+                "gsrsearch": keyword,
+                "gsrlimit": 20,
+                "prop": "imageinfo",
+                "iiprop": "url|extmetadata",
+                "iiurlwidth": 800,
+                "format": "json",
             },
-            params={"query": keyword, "display": 5, "sort": "sim", "filter": "large"},
+            headers={"User-Agent": "newscommu.com/1.0 (across1211@gmail.com)"},
             timeout=15,
         )
         resp.raise_for_status()
-        items = resp.json().get("items", [])
-        print(f"[네이버 이미지] '{keyword}' 검색 결과 {len(items)}건")
-        if not items:
-            return None
-        return items[0].get("link")
+        pages = resp.json().get("query", {}).get("pages", {})
+        print(f"[Wikimedia] '{keyword}' 검색 결과 {len(pages)}건")
+
+        candidates = []
+        for page in pages.values():
+            info_list = page.get("imageinfo", [])
+            if not info_list:
+                continue
+            info = info_list[0]
+            meta = info.get("extmetadata", {})
+            license_name = meta.get("LicenseShortName", {}).get("value", "")
+
+            # NC, ND 포함 라이선스 제외 / 라이선스 없는 것도 제외
+            if not license_name:
+                continue
+            ln_upper = license_name.upper()
+            if "NC" in ln_upper or "ND" in ln_upper:
+                continue
+
+            image_url = info.get("thumburl") or info.get("url", "")
+            if not image_url:
+                continue
+            # 비이미지 파일 제외
+            if not re.search(r"\.(jpe?g|png|webp)", image_url, re.IGNORECASE):
+                continue
+
+            # 출처 텍스트
+            artist = re.sub(r"<[^>]+>", "", meta.get("Artist", {}).get("value", "")).strip()
+            is_free = any(x in ln_upper for x in ["CC0", "PUBLIC DOMAIN", "PD"])
+            if is_free:
+                credit = None
+            else:
+                credit = f"{artist} / Wikimedia Commons ({license_name})" if artist else f"Wikimedia Commons ({license_name})"
+
+            candidates.append((image_url, credit))
+
+        if not candidates:
+            return None, None
+
+        import random
+        return random.choice(candidates)
     except Exception as exc:
-        print(f"[네이버 이미지 검색 실패] {exc}")
-        return None
+        print(f"[Wikimedia 검색 실패] {exc}")
+        return None, None
 
 
 
@@ -643,11 +686,12 @@ def main():
             final_category = CAT_MERGE_MAP.get(category, category)
 
         image_search_keyword = rewritten.get("image_keyword") or final_category
-        print(f"[이미지 검색] 키워드: '{image_search_keyword}'")
-        image_url = search_naver_image(image_search_keyword)
+        print(f"[이미지 검색] Wikimedia 키워드: '{image_search_keyword}'")
+        image_url, image_credit = search_wikimedia_image(image_search_keyword)
         if not image_url:
-            image_url = search_naver_image(final_category)
-        print(f"[이미지 검색 결과] {'찾음 → ' + image_url[:60] if image_url else '못 찾음'}")
+            print(f"[이미지 검색] 폴백: '{final_category}'")
+            image_url, image_credit = search_wikimedia_image(final_category)
+        print(f"[이미지 검색 결과] {'찾음' if image_url else '못 찾음'} / 출처: {image_credit}")
 
         # 발행 시각 = 현재 시각 (한국 시간 KST = UTC+9)
         now_kst = datetime.now(KST)
@@ -661,6 +705,8 @@ def main():
             "summary": rewritten["summary"],
             "content": rewritten.get("content", ""),
             "image_url": image_url,
+            "image_credit": image_credit,
+            "image_source": "wikimedia" if image_url else None,
             "original_url": original_url,
             "url": original_url,
             "source": source,

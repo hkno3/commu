@@ -22,6 +22,8 @@ KST = timezone(timedelta(hours=9))
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY_2", "")
 PUBMED_API_KEY = os.environ.get("PUBMED_API_KEY", "")
 UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
+PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY", "")
+PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY", "")
 
 PUBMED_SEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 PUBMED_FETCH_URL  = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
@@ -324,7 +326,7 @@ def parse_result(result: str, original_title: str) -> dict:
     }
 
 # ---------------------------------------------------------------------------
-# Unsplash 이미지
+# 이미지 검색 (Unsplash / Pixabay / Pexels 순환 — 중복 방지)
 # ---------------------------------------------------------------------------
 
 def search_unsplash_image(keyword: str) -> str | None:
@@ -334,26 +336,82 @@ def search_unsplash_image(keyword: str) -> str | None:
         resp = requests.get(
             UNSPLASH_SEARCH_URL,
             headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
-            params={"query": keyword, "per_page": 5, "orientation": "landscape"},
+            params={"query": keyword, "per_page": 10, "orientation": "landscape"},
             timeout=15,
         )
         resp.raise_for_status()
         results = resp.json().get("results", [])
         print(f"[Unsplash] '{keyword}' 결과 {len(results)}건")
-        if results:
-            return random.choice(results).get("urls", {}).get("regular")
-        # 폴백: animal 키워드
-        resp2 = requests.get(
-            UNSPLASH_SEARCH_URL,
-            headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
-            params={"query": "animal nature", "per_page": 5, "orientation": "landscape"},
-            timeout=15,
-        )
-        results2 = resp2.json().get("results", [])
-        return random.choice(results2).get("urls", {}).get("regular") if results2 else None
+        return random.choice(results).get("urls", {}).get("regular") if results else None
     except Exception as e:
         print(f"[Unsplash 실패] {e}")
         return None
+
+
+def search_pixabay_image(keyword: str) -> str | None:
+    if not PIXABAY_API_KEY or not keyword:
+        return None
+    try:
+        resp = requests.get(
+            "https://pixabay.com/api/",
+            params={
+                "key": PIXABAY_API_KEY,
+                "q": keyword,
+                "image_type": "photo",
+                "orientation": "horizontal",
+                "per_page": 10,
+                "safesearch": "true",
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        hits = resp.json().get("hits", [])
+        print(f"[Pixabay] '{keyword}' 결과 {len(hits)}건")
+        return random.choice(hits).get("webformatURL") if hits else None
+    except Exception as e:
+        print(f"[Pixabay 실패] {e}")
+        return None
+
+
+def search_pexels_image(keyword: str) -> str | None:
+    if not PEXELS_API_KEY or not keyword:
+        return None
+    try:
+        resp = requests.get(
+            "https://api.pexels.com/v1/search",
+            headers={"Authorization": PEXELS_API_KEY},
+            params={"query": keyword, "per_page": 10, "orientation": "landscape"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        photos = resp.json().get("photos", [])
+        print(f"[Pexels] '{keyword}' 결과 {len(photos)}건")
+        return random.choice(photos).get("src", {}).get("large") if photos else None
+    except Exception as e:
+        print(f"[Pexels 실패] {e}")
+        return None
+
+
+def search_animal_image(keyword: str) -> str | None:
+    """Unsplash → Pixabay → Pexels 순환 검색 (매 실행마다 다른 순서)"""
+    searchers = [
+        ("Unsplash", search_unsplash_image),
+        ("Pixabay", search_pixabay_image),
+        ("Pexels", search_pexels_image),
+    ]
+    random.shuffle(searchers)
+    for name, fn in searchers:
+        url = fn(keyword)
+        if url:
+            print(f"[이미지] {name}에서 찾음")
+            return url
+    # 모두 실패 시 "longevity nature" 폴백
+    for name, fn in searchers:
+        url = fn("longevity nature")
+        if url:
+            print(f"[이미지] {name} 폴백으로 찾음")
+            return url
+    return None
 
 # ---------------------------------------------------------------------------
 # Main
@@ -401,7 +459,7 @@ def main():
             continue
 
         image_keyword = rewritten.get("image_keyword") or "animal research"
-        image_url = search_unsplash_image(image_keyword)
+        image_url = search_animal_image(image_keyword)
 
         now_kst = datetime.now(KST)
         publish_time = now_kst.isoformat()
