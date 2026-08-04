@@ -399,16 +399,22 @@ def get_best_image(destination: str) -> dict:
         "호주", "뉴질랜드",
     ])
 
-    # 검색 키워드 추출 (지역명)
-    search_kw = destination.split("·")[0].split(" ")[0]
+    # 검색 키워드: 구체적(예: "인천 소래포구") → 도시명(예: "인천") 순으로 시도
+    specific_kw = destination.split("·")[0].strip()   # "인천 소래포구"
+    city_kw     = specific_kw.split(" ")[0]            # "인천"
 
     if is_domestic and KTO_API_KEY:
-        img = get_kto_image(search_kw)
+        img = get_kto_image(specific_kw)
         if img["url"]:
-            print(f"  이미지: KTO 공식 ({search_kw})")
+            print(f"  이미지: KTO 공식 ({specific_kw})")
+            return img
+        # 구체적 키워드로 못 찾으면 도시명으로 재시도
+        img = get_kto_image(city_kw)
+        if img["url"]:
+            print(f"  이미지: KTO 공식 ({city_kw})")
             return img
 
-    img = get_wikimedia_image(search_kw)
+    img = get_wikimedia_image(specific_kw)
     if img["url"]:
         print(f"  이미지: Wikimedia Commons ({img.get('credit_text', 'CC0')})")
         return img
