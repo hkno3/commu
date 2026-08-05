@@ -325,9 +325,12 @@ def pick_kto_content(travel_data: list) -> dict | None:
                 cid = str(item.get("contentid", ""))
                 if not cid or cid in published:
                     continue
+                img = item.get("firstimage", "") or item.get("firstimage2", "")
+                if not img:
+                    print(f"  스킵 (대표이미지 없음): {item.get('title','')}")
+                    continue
                 title = item.get("title", "").strip()
                 addr  = item.get("addr1", "").strip()
-                img   = item.get("firstimage", "") or item.get("firstimage2", "")
                 # 스캔 위치 저장
                 _save_scan_meta(travel_data, actual_ci, real_page)
                 print(f"  선택: {title} (contentId={cid}, type={ctype}, page={real_page})")
@@ -631,32 +634,28 @@ def main():
         "homepage": strip_html(detail.get("homepage", "")),
     }
 
-    # 3. 이미지 선택 (KTO 공식 이미지 우선)
-    image_url = ""
-    image_source = ""
-
-    # KTO 상세 이미지 목록에서 선택
+    # 3. 이미지 선택 (KTO 공식 이미지만 사용, 없으면 건너뜀)
     img_candidates = [i.get("originimgurl", "") for i in images if i.get("originimgurl")]
     if not img_candidates:
-        # 대표 이미지
-        img_candidates = [spot["firstimage"]] if spot.get("firstimage") else []
+        # detailImage2 없으면 firstimage로 보완
+        fi_list = []
+        if spot.get("firstimage"):
+            fi_list.append(spot["firstimage"])
         fi = detail.get("firstimage", "") or detail.get("firstimage2", "")
-        if fi and fi not in img_candidates:
-            img_candidates.append(fi)
+        if fi and fi not in fi_list:
+            fi_list.append(fi)
+        img_candidates = fi_list
 
     img_candidates = [u for u in img_candidates if u]
-    if img_candidates:
-        random.shuffle(img_candidates)
-        image_url    = img_candidates[0]          # 썸네일
-        extra_images = img_candidates[1:]         # 본문 삽입용 나머지
-        image_source = "kto"
-        print(f"  이미지: KTO 공식 총 {len(img_candidates)}장 (썸네일 1 + 본문 {len(extra_images)})")
-    else:
-        # 폴백: Unsplash/Pixabay/Pexels
-        image_url    = search_fallback_image(title)
-        extra_images = []
-        image_source = "stock" if image_url else ""
-        print(f"  이미지: {'Unsplash/Pixabay/Pexels' if image_url else '없음'}")
+    if not img_candidates:
+        print(f"  스킵: KTO 공식 이미지 없음 → 다음 관광지로")
+        return
+
+    random.shuffle(img_candidates)
+    image_url    = img_candidates[0]
+    extra_images = img_candidates[1:]
+    image_source = "kto"
+    print(f"  이미지: KTO 공식 총 {len(img_candidates)}장 (썸네일 1 + 본문 {len(extra_images)})")
 
     # 4. Gemini로 글 생성
     result = generate_travel_article(kto_data)
