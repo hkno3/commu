@@ -57,7 +57,7 @@ try {
         $article['content'] ?? '',
         mb_substr($article['image_url'] ?? '', 0, 2048),
         mb_substr($article['image_credit'] ?? '', 0, 500),
-        $article['image_source'] ?? null,
+        $article['image_source'] ?? '',
         mb_substr($article['original_url'] ?? $article['url'] ?? '', 0, 2048),
         $article['source'] ?? '',
         $article['category'] ?? '',
