@@ -497,16 +497,47 @@ def generate_travel_article(kto_data: dict) -> dict | None:
             return None
 
         # 제목 추출
-        article_title = f"{title} 완벽 여행 가이드"
+        raw_title = ""
         for line in content.splitlines():
             s = line.strip()
             if s.startswith("제목:"):
-                article_title = s[3:].strip()
+                raw_title = s[3:].strip()
                 break
             if s.startswith("제목 :"):
-                article_title = s[4:].strip()
+                raw_title = s[4:].strip()
                 break
-        article_title = re.sub(r'[\U0001F300-\U0001FFFF\U00002702-\U000027B0\U0000FE0F]+', '', article_title).strip()
+        raw_title = re.sub(r'[\U0001F300-\U0001FFFF\U00002702-\U000027B0\U0000FE0F]+', '', raw_title).strip()
+
+        # 금지 패턴 검사 → 걸리면 재생성
+        BAN_PATTERNS = ["완벽 여행 가이드", "여행 정보", "여행지 소개", "총정리", "알아보기", "여행 가이드"]
+        def is_bad_title(t):
+            if not t or title not in t:
+                return True
+            return any(b in t for b in BAN_PATTERNS)
+
+        if is_bad_title(raw_title):
+            print(f"  제목 재생성 (금지 패턴 감지: '{raw_title}')")
+            retry_prompt = (
+                f"여행지 이름: {title}\n"
+                f"아래 조건을 모두 만족하는 제목을 딱 한 줄만 출력하라. 설명 없이 제목만.\n"
+                f"조건1: '{title}' 이름 포함\n"
+                f"조건2: 이 여행지의 구체적 특징(볼거리·체험·계절·음식·지형) 키워드 1~2개 포함\n"
+                f"조건3: 마지막 단어는 명사 (코스/산책/야경/해변/체험/한옥/축제/계곡 등)\n"
+                f"조건4: 30자 이내, 이모지 없음\n"
+                f"절대금지: '완벽 여행 가이드', '여행 가이드', '여행 정보', '총정리'\n"
+                f"예시: '해운대 일출과 마린시티 야경 코스', '내소사 전나무 숲길 산책 코스'"
+            )
+            try:
+                r2 = requests.post(GEMINI_URL, json={"contents": [{"parts": [{"text": retry_prompt}]}]}, timeout=30)
+                retry_text = r2.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+                retry_text = re.sub(r'[\U0001F300-\U0001FFFF\U00002702-\U000027B0\U0000FE0F\n]+', '', retry_text).strip()
+                if retry_text and not is_bad_title(retry_text):
+                    raw_title = retry_text
+                    print(f"  제목 재생성 완료: {raw_title}")
+            except Exception:
+                pass
+
+        article_title = raw_title if raw_title else f"{title} 여행 코스"
 
         # 요약 추출
         summary = f"{title}의 매력을 소개하는 완벽 여행 가이드입니다."
