@@ -86,28 +86,26 @@ def kto_items(r) -> list:
 
 
 # ---------------------------------------------------------------------------
-# KTO: 최신 업데이트 관광지 목록 조회
+# KTO: 전체 관광지 목록 조회 (가나다순 순환)
 # ---------------------------------------------------------------------------
 
-def fetch_kto_latest(page: int = 1, num: int = 30) -> list:
-    """수정일 기준 최신 관광지 목록 (arrange=C)"""
-    results = []
-    for ctype in CONTENT_TYPES:
-        try:
-            r = requests.get(
-                f"{KTO_BASE}/areaBasedList2",
-                params=kto_params({
-                    "numOfRows": num,
-                    "pageNo": page,
-                    "arrange": "C",          # 수정일순
-                    "contentTypeId": ctype,
-                }),
-                timeout=10,
-            )
-            results.extend(kto_items(r))
-        except Exception as e:
-            print(f"  KTO areaBasedList2 오류 (type {ctype}): {e}")
-    return results
+def fetch_kto_page(page: int = 1, num: int = 30, ctype: int = 12) -> list:
+    """가나다순(arrange=A) 전체 목록에서 특정 페이지 조회"""
+    try:
+        r = requests.get(
+            f"{KTO_BASE}/areaBasedList2",
+            params=kto_params({
+                "numOfRows": num,
+                "pageNo": page,
+                "arrange": "A",          # 가나다순 (전체 순환용)
+                "contentTypeId": ctype,
+            }),
+            timeout=10,
+        )
+        return kto_items(r)
+    except Exception as e:
+        print(f"  KTO areaBasedList2 오류 (type {ctype}, page {page}): {e}")
+        return []
 
 
 # ---------------------------------------------------------------------------
@@ -288,56 +286,89 @@ def insert_content_images(content_html: str, image_urls: list) -> str:
 
 def pick_kto_content(travel_data: list) -> dict | None:
     """
-    KTO 최신 업데이트 목록에서 아직 발행 안 했거나
-    KTO가 업데이트한(modifiedtime 변경) 관광지를 선택
+    KTO 전체 35,000건을 가나다순으로 순환하며 미발행 관광지 선택.
+    마지막 스캔 위치(ctype_idx, page)를 travel_data 메타에 저장해 이어서 진행.
     """
-    # 이미 발행된 contentId → modifiedtime 맵
     published = {
-        a["kto_content_id"]: a.get("kto_modified", "")
+        a["kto_content_id"]
         for a in travel_data
         if a.get("kto_content_id")
     }
 
-    for page in range(1, 4):  # 최대 3페이지(~90개) 탐색
-        candidates = fetch_kto_latest(page=page, num=30)
-        if not candidates:
-            break
+    # 마지막 스캔 위치 복원
+    meta = next((a for a in travel_data if a.get("_meta")), {})
+    ctype_idx = meta.get("kto_ctype_idx", 0)   # CONTENT_TYPES 인덱스
+    last_page = meta.get("kto_last_page", 0)    # 0 = 아직 시작 안 함
 
-        for item in candidates:
-            cid = str(item.get("contentid", ""))
-            modified = str(item.get("modifiedtime", ""))
-            if not cid:
-                continue
+    num_per_page = 30
+    max_pages = 1200  # 35,000 / 30 ≈ 1,167
 
-            # 미발행 OR KTO에서 업데이트된 경우
-            if cid not in published or published[cid] != modified:
+    # 현재 ctype부터 최대 2 ctype × 5페이지씩 탐색 (API 과부하 방지)
+    for ci in range(len(CONTENT_TYPES)):
+        actual_ci = (ctype_idx + ci) % len(CONTENT_TYPES)
+        ctype = CONTENT_TYPES[actual_ci]
+        start_page = (last_page + 1) if ci == 0 else 1
+
+        for page in range(start_page, start_page + 5):
+            real_page = ((page - 1) % max_pages) + 1  # 끝까지 가면 1로 리셋
+            items = fetch_kto_page(page=real_page, num=num_per_page, ctype=ctype)
+            print(f"  스캔: contentType={ctype}, page={real_page}, {len(items)}건")
+
+            if not items:
+                # 이 ctype 끝 → 다음 ctype으로
+                ctype_idx = (actual_ci + 1) % len(CONTENT_TYPES)
+                last_page = 0
+                _save_scan_meta(travel_data, ctype_idx, 0)
+                break
+
+            for item in items:
+                cid = str(item.get("contentid", ""))
+                if not cid or cid in published:
+                    continue
                 title = item.get("title", "").strip()
                 addr  = item.get("addr1", "").strip()
                 img   = item.get("firstimage", "") or item.get("firstimage2", "")
-                print(f"  선택: {title} (contentId={cid}, 수정={modified})")
+                # 스캔 위치 저장
+                _save_scan_meta(travel_data, actual_ci, real_page)
+                print(f"  선택: {title} (contentId={cid}, type={ctype}, page={real_page})")
                 return {
-                    "contentid":    cid,
-                    "contenttype":  str(item.get("contenttypeid", "12")),
-                    "title":        title,
-                    "addr":         addr,
-                    "firstimage":   img,
-                    "modifiedtime": modified,
+                    "contentid":   cid,
+                    "contenttype": str(item.get("contenttypeid", ctype)),
+                    "title":       title,
+                    "addr":        addr,
+                    "firstimage":  img,
+                    "modifiedtime": str(item.get("modifiedtime", "")),
                 }
+            # 페이지 소진 → 위치 갱신
+            last_page = real_page
 
-    print("  발행할 새 관광지 없음 (랜덤 재발행)")
+    # 모두 발행 완료 → ctype 0, page 0으로 리셋 후 가장 오래된 글 재발행
+    print("  전체 순환 완료 → 처음부터 다시 시작")
+    _save_scan_meta(travel_data, 0, 0)
     if travel_data:
-        # 모두 발행됐으면 가장 오래된 글 재발행
-        oldest = sorted(travel_data, key=lambda a: a.get("pub_date", ""))
-        item_old = oldest[0]
-        return {
-            "contentid":    item_old.get("kto_content_id", ""),
-            "contenttype":  "12",
-            "title":        item_old.get("destination", item_old.get("title", "")),
-            "addr":         "",
-            "firstimage":   "",
-            "modifiedtime": "",
-        }
+        articles = [a for a in travel_data if not a.get("_meta")]
+        if articles:
+            oldest = sorted(articles, key=lambda a: a.get("pub_date", ""))
+            item_old = oldest[0]
+            return {
+                "contentid":   item_old.get("kto_content_id", ""),
+                "contenttype": "12",
+                "title":       item_old.get("destination", item_old.get("title", "")),
+                "addr":        "",
+                "firstimage":  "",
+                "modifiedtime": "",
+            }
     return None
+
+
+def _save_scan_meta(travel_data: list, ctype_idx: int, page: int):
+    """travel_data 내 _meta 항목에 스캔 위치 저장"""
+    for a in travel_data:
+        if a.get("_meta"):
+            a["kto_ctype_idx"] = ctype_idx
+            a["kto_last_page"] = page
+            return
+    travel_data.append({"_meta": True, "kto_ctype_idx": ctype_idx, "kto_last_page": page})
 
 
 # ---------------------------------------------------------------------------
@@ -670,9 +701,13 @@ def main():
         "kto_modified":     spot.get("modifiedtime", ""),
     }
 
-    # 기존 동일 article_id 교체
+    # 기존 동일 article_id 교체 (_meta 항목은 보존)
     travel_data = [a for a in travel_data if a.get("article_id") != article_id]
+    # _meta를 맨 뒤로 분리했다가 다시 붙임
+    meta_items = [a for a in travel_data if a.get("_meta")]
+    travel_data = [a for a in travel_data if not a.get("_meta")]
     travel_data.insert(0, article)
+    travel_data.extend(meta_items)
     save_json(TRAVEL_FILE, travel_data)
 
     try:
