@@ -107,7 +107,7 @@ def make_button(title: str, url: str) -> str:
         'border-radius:10px; font-weight:bold;'
         'font-size:clamp(16px, 4.2vw, 22px);'
         'line-height:1.3; text-decoration:none;'
-        'white-space:nowrap;'
+        'white-space:normal; word-break:keep-all;'
         'animation:blink 1s infinite;">\n'
         f'    {safe_title}\n'
         '  </a>\n'
