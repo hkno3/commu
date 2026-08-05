@@ -66,14 +66,14 @@ def cat_to_filename(category: str) -> str:
 
 
 SAVE_SECRET = os.environ.get("SAVE_SECRET", "nc_save_s3cr3t_2026")
-SAVE_API_URL = "http://172.105.235.119/api/save_article.php"
+SAVE_API_URL = "https://newscommu.com/api/save_article.php"
 
 def save_article_to_db(article: dict) -> None:
     try:
         r = requests.post(
             SAVE_API_URL,
             json=article,
-            headers={"X-Save-Secret": SAVE_SECRET, "Content-Type": "application/json", "Host": "newscommu.com"},
+            headers={"X-Save-Secret": SAVE_SECRET, "Content-Type": "application/json"},
             timeout=15,
         )
         if r.status_code == 200:
