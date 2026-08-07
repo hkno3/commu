@@ -233,7 +233,7 @@ def search_pexels_image(keyword: str) -> str:
 
 
 def search_fallback_image(keyword: str) -> str:
-    sources = [search_unsplash_image, search_pixabay_image, search_pexels_image]
+    sources = [search_unsplash_image, search_pexels_image]
     random.shuffle(sources)
     for fn in sources:
         url = fn(keyword)

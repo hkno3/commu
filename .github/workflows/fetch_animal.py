@@ -397,10 +397,9 @@ def search_pexels_image(keyword: str) -> str | None:
 
 
 def search_animal_image(keyword: str) -> str | None:
-    """Unsplash → Pixabay → Pexels 순환 검색 (매 실행마다 다른 순서)"""
+    """Unsplash/Pexels 랜덤 순환 (Pixabay 제외 — URL 만료 문제)"""
     searchers = [
         ("Unsplash", search_unsplash_image),
-        ("Pixabay", search_pixabay_image),
         ("Pexels", search_pexels_image),
     ]
     random.shuffle(searchers)
